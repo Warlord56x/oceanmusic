@@ -4,21 +4,47 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import vertexShader from "./shaders/vertex.glsl";
 import fragmentShader from "./shaders/fragment.glsl";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Stats, useGLTF } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { Stats, useGLTF } from "@react-three/drei";
 import {
   freqConfig,
   getAllFrequencyData,
   getFrequencies,
-} from "@/app/_utils/visualizerUtils";
-import musicService from "@/app/_services/musicService";
+} from "@/_utils/visualizerUtils";
+import musicService from "@/_services/musicService";
 import GUI from "lil-gui";
+import dynamic from "next/dynamic";
+import { CircularProgress } from "@mui/material";
+const View = dynamic(
+  () => import("@/components/canvas/View").then((mod) => mod.View),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          height: "100%",
+        }}
+      >
+        <CircularProgress
+          size="8rem"
+          style={{ transition: "none" }}
+          variant="indeterminate"
+        ></CircularProgress>
+      </div>
+    ),
+  },
+);
 
-const model = "ETERNAL_STEAM_Z.glb";
+const model = "dice.glb";
 
 function Particles() {
   const { scene } = useGLTF("/" + model);
   const points = useRef<THREE.Points>(null!);
+  const pointsGeometry = useRef<THREE.BufferGeometry>(null!);
   const pointsMatRef = useRef<THREE.ShaderMaterial>(null!);
   const [modelScale, setModelScale] = useState<number>(1.0);
 
@@ -72,10 +98,10 @@ function Particles() {
         value: 0.0,
       },
       uColorFrom: {
-        value: new THREE.Color(uniformDefaults.colorFrom), // #1871cf
+        value: new THREE.Color(uniformDefaults.colorFrom),
       },
       uColorTo: {
-        value: new THREE.Color(uniformDefaults.colorTo), // #072e8c
+        value: new THREE.Color(uniformDefaults.colorTo),
       },
 
       uSize: {
@@ -172,12 +198,15 @@ function Particles() {
       .onChange((value: number) => {
         setModelScale(value);
       });
+    return () => {
+      lilGUI.destroy();
+    };
   }, [nodes, uniformDefaults]);
 
   return (
     <group>
       <points ref={points} scale={modelScale}>
-        <bufferGeometry>
+        <bufferGeometry ref={pointsGeometry}>
           <bufferAttribute
             attach="attributes-position"
             count={particlesPosition.length / 3}
@@ -201,11 +230,10 @@ function Particles() {
 export default function ParticlesPage() {
   return (
     <div style={{ height: "100%" }}>
-      <Canvas>
-        <OrbitControls enablePan={false} />
+      <View orbit style={{ height: "100%" }}>
         <Particles />
         <Stats />
-      </Canvas>
+      </View>
     </div>
   );
 }

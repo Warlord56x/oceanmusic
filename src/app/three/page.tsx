@@ -11,7 +11,6 @@ import {
   useFrame,
 } from "@react-three/fiber";
 import { OrbitControls, Sparkles, Stars, useTexture } from "@react-three/drei";
-import { Model } from "./Lego_test";
 
 function Box(props: ThreeElements["mesh"]) {
   const meshRef = useRef<THREE.Mesh>(null!);

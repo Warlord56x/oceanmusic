@@ -1,36 +1,45 @@
 "use client";
 
-import Link from "next/link";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Button,
   IconButton,
   Slider,
   Container,
-  Stack,
   Typography,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
+  useMediaQuery,
+  Stack,
+  useTheme,
+  SpeedDialAction,
+  SpeedDialIcon,
+  SpeedDial,
+  Avatar,
 } from "@mui/material";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { styled } from "@mui/material/styles";
 import {
   PlayArrowOutlined,
   PauseOutlined,
   VolumeUpOutlined,
   VolumeMuteOutlined,
-  Home,
   LoopOutlined,
+  LibraryMusicOutlined,
+  HomeOutlined,
+  CloudUploadOutlined,
+  ThreeDRotationOutlined,
+  LoginOutlined,
+  LogoutOutlined,
+  PersonAddOutlined,
 } from "@mui/icons-material";
 
-import musicService from "@/app/_services/musicService";
+import musicService from "@/_services/musicService";
 import Grid from "@mui/system/Unstable_Grid";
+import { useRouter } from "next/navigation";
+import { onAuthStateChanged, signOut } from "@/lib/firebase/auth";
+import LoginModal from "@/components/login";
+import { User } from "firebase/auth";
+import RegisterModal from "@/components/register";
+import UploadModal from "@/components/fileUpload";
 
 const VisuallyHiddenInput = styled("input")({
   clipPath: "inset(50%)",
@@ -48,8 +57,16 @@ export default function BottomBar() {
   const [volume, setVolume] = useState<number>(1.0);
   const [time, setTime] = useState<number>(0.0);
   const [duration, setDuration] = useState<number>(100.0);
-  const [drawerState, setDrawerState] = useState<boolean>(false);
   const [loop, setLoop] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null!);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [registerModalOpen, setRegisterModalOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
+
+  const theme = useTheme();
+  const matches = useMediaQuery(theme.breakpoints.up("sm"));
 
   const upload = (event: any) => {
     musicService.src = URL.createObjectURL(event.target.files[0]);
@@ -126,60 +143,91 @@ export default function BottomBar() {
     return `${hoursStr}:${minutesStr}:${secondsStr}`;
   };
 
-  const toggleDrawer =
-    (open: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
-      if (
-        event.type === "keydown" &&
-        ((event as React.KeyboardEvent).key === "Tab" ||
-          (event as React.KeyboardEvent).key === "Shift")
-      ) {
-        return;
-      }
+  const actions = useMemo(
+    () => [
+      {
+        icon: <ThreeDRotationOutlined />,
+        name: "Particles",
+        action: () => router.push("/particles"),
+      },
+      {
+        icon: <LibraryMusicOutlined />,
+        name: "Musics",
+        action: () => router.push("/musics"),
+      },
+      {
+        icon: user === null ? <PersonAddOutlined /> : <CloudUploadOutlined />,
+        name: user === null ? "Register" : "Upload",
+        action: () => {
+          user === null
+            ? setRegisterModalOpen(!registerModalOpen)
+            : setUploadModalOpen(!uploadModalOpen);
+        },
+      },
+      {
+        icon: user === null ? <LoginOutlined /> : <LogoutOutlined />,
+        name: user === null ? "Login" : "Logout",
+        action: () => {
+          user === null ? setLoginModalOpen(!loginModalOpen) : signOut();
+        },
+      },
+      { icon: <HomeOutlined />, name: "Home", action: () => router.push("/") },
+    ],
+    [registerModalOpen, router, user],
+  );
 
-      setDrawerState(open);
-    };
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged((user) => {
+      setUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
     <AppBar position="fixed" color="primary" sx={{ top: "auto", bottom: 0 }}>
+      <LoginModal
+        open={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+      />
+      <RegisterModal
+        open={registerModalOpen}
+        onClose={() => setRegisterModalOpen(false)}
+      />
+      <UploadModal
+        open={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+      />
       <Toolbar>
         <Container>
-          <Grid container spacing={2}>
-            <Grid xs="auto">
-              <Button onClick={toggleDrawer(true)}>Drawer</Button>
-              <Drawer
-                anchor={"bottom"}
-                open={drawerState}
-                onClose={toggleDrawer(false)}
-              >
-                <List>
-                  <ListItem>
-                    <ListItemButton>
-                      <ListItemIcon>
-                        <CloudUploadIcon />
-                      </ListItemIcon>
-                      <ListItemText primary={"Upload file"} />
-                      <VisuallyHiddenInput
-                        type="file"
-                        accept={"audio/*"}
-                        onChange={upload}
-                      />
-                    </ListItemButton>
-                  </ListItem>
+          <SpeedDial
+            ariaLabel="SpeedDial basic example"
+            sx={{ position: "absolute", bottom: 20, right: 20 }}
+            icon={<SpeedDialIcon />}
+          >
+            {actions.map((action) => (
+              <SpeedDialAction
+                key={action.name}
+                icon={action.icon}
+                tooltipTitle={action.name}
+                tooltipOpen
+                onClick={action.action}
+              />
+            ))}
+            <VisuallyHiddenInput
+              ref={fileInputRef}
+              type="file"
+              accept="audio/*"
+              onChange={upload}
+            />
+          </SpeedDial>
 
-                  <ListItem>
-                    <ListItemButton>
-                      <ListItemIcon>
-                        <Home />
-                      </ListItemIcon>
-                      <Link href={"/"}>Back</Link>
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Drawer>
+          <Grid container spacing={2}>
+            <Grid xs={1}>
+              <Avatar alt="No Image" src={musicService.music?.cover} />
             </Grid>
 
-            <Grid xs={5}>
-              <Stack direction="row" spacing={2} alignItems="center">
+            <Grid xs={8}>
+              <Stack direction="row" spacing={1} alignItems="center">
                 <IconButton color="primary" onClick={toggle}>
                   {isPlaying ? <PauseOutlined /> : <PlayArrowOutlined />}
                 </IconButton>
@@ -206,7 +254,7 @@ export default function BottomBar() {
               </Stack>
             </Grid>
 
-            <Grid xs={2}>
+            <Grid xs={2} hidden={!matches}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <IconButton color="primary" onClick={mute}>
                   {volume !== 0 ? <VolumeUpOutlined /> : <VolumeMuteOutlined />}
