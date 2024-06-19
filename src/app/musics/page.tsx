@@ -6,7 +6,7 @@ import musicService from "@/_services/musicService";
 import { getMusicsSnapshot } from "@/lib/firebase/firestore";
 import { Music } from "@/lib/data/music";
 
-const MusicItem = lazy(() => import("./Music"));
+const MusicItem = lazy(() => import("./music"));
 
 export default function Musics() {
   const [musics, setMusics] = useState<Music[]>([]);
@@ -22,14 +22,20 @@ export default function Musics() {
     };
   }, []);
 
-  const handleListItemClick = (index: number) => {
+  const handleListItemClick = (index: number, noPlay: boolean = false) => {
     setSelectedIndex(index);
-    musicService.music = musics[index];
+
+    if (musicService.music !== musics[index]) {
+      musicService.music = musics[index];
+    }
+
+    if (noPlay) return;
+    musicService.play();
   };
 
   return (
     <Container>
-      <Typography pt={2} variant={"h3"}>
+      <Typography pt={2} variant="h3">
         List of musics
       </Typography>
 

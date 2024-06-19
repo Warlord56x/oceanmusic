@@ -41,9 +41,9 @@ void main() {
 
   // touch
   float t = texture2D(uTouchTexture, uv).r;
-  particlePosition.z += t * 20.0 * rand;
-  particlePosition.x += cos(angle) * t * 20.0 * rand;
-  particlePosition.y += sin(angle) * t * 20.0 * rand;
+  particlePosition.z += t * 100.0 * rand;
+  particlePosition.x += cos(angle) * t * 100.0 * rand;
+  particlePosition.y += sin(angle) * t * 100.0 * rand;
 
   // Calculate final position and size
   vec4 modelPosition = modelMatrix * vec4(particlePosition, 1.0);

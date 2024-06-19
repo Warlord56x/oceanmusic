@@ -19,7 +19,7 @@ export default class TouchTexture {
   constructor(size: number) {
     this.size = size;
     this.maxAge = 120;
-    this.radius = 0.3;
+    this.radius = 0.15;
     this.trail = [];
 
     this.canvas = document.createElement("canvas");

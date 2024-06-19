@@ -16,15 +16,21 @@ class MusicService {
   private readonly highPassFilter;
 
   private _music!: Music;
+  private cb!: (state: boolean) => void;
 
   set music(music: Music) {
     this.audio.src = music.audio;
     this._music = music;
-    this.play();
+    this.isPlaying = false;
+    this.cb(false);
   }
 
   get music() {
     return this._music;
+  }
+
+  onPlayStateChange(cb: (state: boolean) => void) {
+    this.cb = cb;
   }
 
   set src(src: string) {
@@ -42,11 +48,13 @@ class MusicService {
     this.audio.play();
     this.audioContext.resume();
     this.isPlaying = true;
+    this.cb(true);
   }
 
   pause() {
     this.audio.pause();
     this.isPlaying = false;
+    this.cb(false);
   }
 
   constructor() {

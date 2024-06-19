@@ -109,6 +109,9 @@ export default function BottomBar() {
     };
 
     musicService.audio.addEventListener("timeupdate", timeUpdate);
+    musicService.onPlayStateChange((state) => {
+      setIsPlaying(state);
+    });
 
     return () => {
       musicService.audio.removeEventListener("timeupdate", timeUpdate);
@@ -173,7 +176,7 @@ export default function BottomBar() {
       },
       { icon: <HomeOutlined />, name: "Home", action: () => router.push("/") },
     ],
-    [registerModalOpen, router, user],
+    [loginModalOpen, registerModalOpen, router, uploadModalOpen, user],
   );
 
   useEffect(() => {
