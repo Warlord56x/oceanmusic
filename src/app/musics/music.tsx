@@ -10,8 +10,8 @@ import {
   MenuItem,
 } from "@mui/material";
 import React, { useState } from "react";
-import { router } from "next/client";
 import { useRouter } from "next/navigation";
+import { shortener } from "@/_utils/formatUtils";
 
 type musicProps = {
   music: Music;
@@ -46,7 +46,10 @@ export default function MusicItem({
         <Avatar alt={music.name} src={music.cover} />
       </ListItemAvatar>
 
-      <ListItemText primary={music.name} secondary={music.description} />
+      <ListItemText
+        primary={music.name}
+        secondary={shortener(music.description)}
+      />
 
       <IconButton color="primary" onClick={() => itemClick(index)}>
         <PlayArrowOutlined />

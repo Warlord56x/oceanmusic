@@ -1,7 +1,13 @@
 "use client";
 import List from "@mui/material/List";
 import React, { lazy, Suspense, useEffect, useState } from "react";
-import { Container, ListItem, Skeleton, Typography } from "@mui/material";
+import {
+  Container,
+  ListItem,
+  Pagination,
+  Skeleton,
+  Typography,
+} from "@mui/material";
 import musicService from "@/_services/musicService";
 import { getMusicsSnapshot } from "@/lib/firebase/firestore";
 import { Music } from "@/lib/data/music";
@@ -9,12 +15,15 @@ import { Music } from "@/lib/data/music";
 const MusicItem = lazy(() => import("./music"));
 
 export default function Musics() {
+  const [page, setPage] = useState(1);
   const [musics, setMusics] = useState<Music[]>([]);
+  const [onPage, setOnPage] = useState<Music[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   useEffect(() => {
     const unsubscribe = getMusicsSnapshot((data) => {
       setMusics(data);
+      setOnPage(data.slice(0, 10));
     });
 
     return () => {
@@ -40,7 +49,15 @@ export default function Musics() {
       </Typography>
 
       <List>
-        {musics.map((music, index) => (
+        <Pagination
+          count={musics.length % 10}
+          page={page}
+          onChange={(_, value) => {
+            setPage(value);
+            setOnPage(musics.slice((value - 1) * 10, value * 10));
+          }}
+        />
+        {onPage.map((music, index) => (
           <Suspense
             key={music.name + index}
             fallback={

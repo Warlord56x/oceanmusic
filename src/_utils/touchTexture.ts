@@ -77,7 +77,7 @@ export default class TouchTexture {
       y: 1 - point.y + this.size / 2,
     };
 
-    let intensity = 1;
+    let intensity;
     if (point.age < this.maxAge * 0.3) {
       intensity = this.easeOutSine(point.age / (this.maxAge * 0.3), 0, 1, 1);
     } else {

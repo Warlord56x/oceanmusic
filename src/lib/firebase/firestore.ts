@@ -1,4 +1,12 @@
-import { collection, doc, onSnapshot, query, setDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  DocumentSnapshot,
+  getDoc,
+  onSnapshot,
+  query,
+  setDoc,
+} from "firebase/firestore";
 
 import { db } from "./clientApp";
 import { Music } from "@/lib/data/music";
@@ -8,10 +16,25 @@ export function getMusicsSnapshot(cb: (value: Music[]) => void) {
 
   return onSnapshot(q, (querySnapshot) => {
     const results = querySnapshot.docs.map((doc) => {
-      return doc.data() as Music;
+      return convertToMusic(doc);
     });
 
     cb(results);
+  });
+}
+
+function convertToMusic(doc: DocumentSnapshot | undefined) {
+  let music = doc?.data();
+  if (music) {
+    music["musicId"] = doc?.id;
+    music["uploadDate"] = music["uploadDate"].toDate();
+  }
+  return music as Music;
+}
+
+export async function getMusic(id: string) {
+  return await getDoc(doc(db, `music/${id}`)).then((doc) => {
+    return convertToMusic(doc);
   });
 }
 

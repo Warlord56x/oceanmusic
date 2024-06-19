@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Backdrop from "@mui/material/Backdrop";
 import Container from "@mui/material/Container";
 import Modal from "@mui/material/Modal";
@@ -57,12 +58,14 @@ export default function UploadModal(props: {
     initialValues: {
       musicName: "",
       file: new File([], "None"),
+      cover: new File([], "None"),
     },
     validationSchema: validationSchema,
     onSubmit: (values) => {
       uploadMusic(
         values.musicName,
         values.file,
+        values.cover,
         (state) =>
           setProgress((state.bytesTransferred / state.totalBytes) * 100),
         () => props.onClose(),
@@ -92,6 +95,43 @@ export default function UploadModal(props: {
 
               <FormControl
                 required
+                error={formik.touched.cover && Boolean(formik.errors.cover)}
+              >
+                <Button
+                  component="label"
+                  variant="outlined"
+                  role={undefined}
+                  startIcon={<CloudUploadOutlined />}
+                >
+                  Upload Cover
+                  <VisuallyHiddenInput
+                    type="file"
+                    accept="image/*"
+                    onChange={(event: any) => {
+                      formik.setFieldValue(
+                        "cover",
+                        event.currentTarget.files[0],
+                      );
+                    }}
+                  />
+                </Button>
+
+                <FormHelperText>
+                  {formik.touched.cover && formik.errors.cover?.name}
+                </FormHelperText>
+              </FormControl>
+
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <Image
+                  alt="cover picture"
+                  src={URL.createObjectURL(formik.values.cover)}
+                  width={100}
+                  height={100}
+                />
+              </div>
+
+              <FormControl
+                required
                 error={formik.touched.file && Boolean(formik.errors.file)}
               >
                 <Button
@@ -100,9 +140,10 @@ export default function UploadModal(props: {
                   role={undefined}
                   startIcon={<CloudUploadOutlined />}
                 >
-                  Upload File
+                  Upload Audio
                   <VisuallyHiddenInput
                     type="file"
+                    accept="audio/*"
                     onChange={(event: any) => {
                       formik.setFieldValue(
                         "file",

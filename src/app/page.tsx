@@ -122,6 +122,19 @@ function ImageParticles() {
     shaderRef.current.uniforms["uMousePos"].value.copy(event.point);
   };
 
+  const onPointerDown = (e: ThreeEvent<any>) => {
+    // Only the mesh closest to the camera will be processed
+    e.stopPropagation();
+    // You may optionally capture the target
+    e.target.setPointerCapture(e.pointerId);
+    onPointerMove(e as ThreeEvent<MouseEvent>);
+  };
+  const onPointerUp = (e: ThreeEvent<any>) => {
+    e.stopPropagation();
+    // Optionally release capture
+    e.target.releasePointerCapture(e.pointerId);
+  };
+
   useFrame((state) => {
     const { clock } = state;
 
