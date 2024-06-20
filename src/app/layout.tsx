@@ -5,7 +5,11 @@ import React from "react";
 import BottomBar from "@/app/bottomBar";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v13-appRouter";
 import { ThemeProvider } from "@mui/material/styles";
-import { CssBaseline } from "@mui/material";
+import {
+  BottomNavigation,
+  BottomNavigationAction,
+  CssBaseline,
+} from "@mui/material";
 import theme from "@/app/theme";
 import { Layout } from "@/components/CanvasLayout";
 
@@ -42,7 +46,6 @@ export default function RootLayout({
                   flexDirection: "column",
                   width: "100%",
                   margin: 0,
-                  padding: 0,
                 }}
               >
                 <BottomBar />

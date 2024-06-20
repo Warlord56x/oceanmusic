@@ -15,6 +15,7 @@ import {
   View as ViewImpl,
 } from "@react-three/drei";
 import { Three } from "@/helpers/Three";
+import { useMediaQuery, useTheme } from "@mui/material";
 
 type Props = {
   children: ReactNode;
@@ -25,13 +26,18 @@ type Props = {
 
 const View = forwardRef(({ children, orbit, far, ...props }: Props, ref) => {
   const localRef = useRef<HTMLDivElement>(null!);
+  const theme = useTheme();
+  const matches = useMediaQuery(theme.breakpoints.up("sm"));
   useImperativeHandle(ref, () => localRef.current);
 
   return (
     <>
       <div ref={localRef} {...props} />
       <Three>
-        <PerspectiveCamera makeDefault position={[0, 0, far ? 600 : 10]} />
+        <PerspectiveCamera
+          makeDefault
+          position={[0, 0, far ? (matches ? 600 : 900) : 10]}
+        />
         {orbit && <OrbitControls enablePan={false} />}
         <ViewImpl track={localRef}>{children}</ViewImpl>
       </Three>

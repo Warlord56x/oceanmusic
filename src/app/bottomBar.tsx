@@ -48,6 +48,7 @@ import { shortener } from "@/_utils/formatUtils";
 import { Music } from "@/lib/data/music";
 import { undefined } from "zod";
 import Fade from "@mui/material/Fade";
+import * as eruda from "eruda";
 
 const VisuallyHiddenInput = styled("input")({
   clipPath: "inset(50%)",
@@ -149,7 +150,6 @@ export default function BottomBar() {
     if (isPlaying) {
       pause();
     }
-    console.log(e.target.value);
     const newTime = e.target.value;
     musicService.audio.currentTime = newTime;
     setTime(newTime);
@@ -214,121 +214,133 @@ export default function BottomBar() {
   }, []);
 
   return (
-    <AppBar color="primary" position="sticky" style={{ margin: 0, padding: 0 }}>
-      <LoginModal
-        open={loginModalOpen}
-        onClose={() => setLoginModalOpen(false)}
-      />
-      <RegisterModal
-        open={registerModalOpen}
-        onClose={() => setRegisterModalOpen(false)}
-      />
-      <UploadModal
-        open={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-      />
-      <Toolbar>
-        <Container sx={{ m: 0, p: "0.5rem" }}>
-          <SpeedDial
-            ariaLabel="SpeedDial basic example"
-            sx={{ position: "absolute", bottom: 20, right: 20 }}
-            onOpen={() => setDialOpen(true)}
-            onClose={() => setDialOpen(false)}
-            icon={
-              <>
-                <Fade in={!dialOpen} style={{ position: "absolute" }}>
-                  <MoreHorizOutlined />
-                </Fade>
-                <Fade in={dialOpen}>
-                  <CloseOutlined />
-                </Fade>
-              </>
-            }
-          >
-            {actions.map((action) => (
-              <SpeedDialAction
-                key={action.name}
-                icon={action.icon}
-                tooltipTitle={action.name}
-                tooltipOpen
-                onClick={action.action}
+    <>
+      <AppBar
+        color="primary"
+        position="fixed"
+        sx={{ m: 0, p: 0, bottom: 0, top: "auto" }}
+      >
+        <LoginModal
+          open={loginModalOpen}
+          onClose={() => setLoginModalOpen(false)}
+        />
+        <RegisterModal
+          open={registerModalOpen}
+          onClose={() => setRegisterModalOpen(false)}
+        />
+        <UploadModal
+          open={uploadModalOpen}
+          onClose={() => setUploadModalOpen(false)}
+        />
+        <Toolbar>
+          <Container sx={{ m: 0, p: "0.5rem" }}>
+            <SpeedDial
+              ariaLabel="SpeedDial basic example"
+              sx={{ position: "absolute", bottom: 20, right: 20 }}
+              onOpen={() => setDialOpen(true)}
+              onClose={() => setDialOpen(false)}
+              icon={
+                <>
+                  <Fade in={!dialOpen} style={{ position: "absolute" }}>
+                    <MoreHorizOutlined />
+                  </Fade>
+                  <Fade in={dialOpen}>
+                    <CloseOutlined />
+                  </Fade>
+                </>
+              }
+            >
+              {actions.map((action) => (
+                <SpeedDialAction
+                  key={action.name}
+                  icon={action.icon}
+                  tooltipTitle={action.name}
+                  tooltipOpen
+                  onClick={action.action}
+                />
+              ))}
+              <VisuallyHiddenInput
+                ref={fileInputRef}
+                type="file"
+                accept="audio/*"
+                onChange={upload}
               />
-            ))}
-            <VisuallyHiddenInput
-              ref={fileInputRef}
-              type="file"
-              accept="audio/*"
-              onChange={upload}
-            />
-          </SpeedDial>
+            </SpeedDial>
 
-          <Grid
-            style={{ margin: 0, padding: 0 }}
-            container
-            spacing={2}
-            direction={matches ? "row" : "column"}
-          >
-            <Grid style={{ margin: 0, padding: 0 }} xs="auto">
-              <Stack
-                style={{ margin: 0, padding: 0 }}
-                direction="row"
-                spacing={2}
-              >
-                <Avatar alt="No Image" src={music.cover} />
-                <Stack direction="column" spacing={0}>
-                  <Typography>{shortener(music.name, 10)}</Typography>
-                  <Typography variant="subtitle2">
-                    {shortener(music.description, 8)}
-                  </Typography>
-                </Stack>
-              </Stack>
-            </Grid>
-
-            <Grid xs={10} sm={7}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <IconButton color="primary" onClick={toggle}>
-                  {isPlaying ? <PauseOutlined /> : <PlayArrowOutlined />}
-                </IconButton>
-
-                <Slider
-                  value={time}
-                  onChange={updateSlider}
-                  max={duration}
-                  onChangeCommitted={() => {
-                    play();
-                  }}
-                />
-
-                <IconButton
-                  onClick={() => {
-                    setLoop(!loop);
-                    musicService.audio.loop = !musicService.audio.loop;
-                  }}
+            <Grid
+              style={{ margin: 0, padding: 0 }}
+              container
+              spacing={2}
+              direction={matches ? "row" : "column"}
+            >
+              <Grid style={{ margin: 0, padding: 0 }} xs="auto">
+                <Stack
+                  style={{ margin: 0, padding: 0 }}
+                  direction="row"
+                  spacing={2}
                 >
-                  <LoopOutlined color={loop ? "primary" : "inherit"} />
-                </IconButton>
+                  <Avatar alt="No Image" src={music.cover} />
+                  <Stack direction="column" spacing={0}>
+                    <Typography>{shortener(music.name, 10)}</Typography>
+                    <Typography variant="subtitle2">
+                      {shortener(music.description, 8)}
+                    </Typography>
+                  </Stack>
+                </Stack>
+              </Grid>
 
-                <Typography>{formatTime(time || 0)}</Typography>
-              </Stack>
+              <Grid xs={10} sm={7}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <IconButton color="primary" onClick={toggle}>
+                    {isPlaying ? <PauseOutlined /> : <PlayArrowOutlined />}
+                  </IconButton>
+
+                  <Slider
+                    value={time}
+                    onChange={updateSlider}
+                    max={duration}
+                    onChangeCommitted={() => {
+                      play();
+                    }}
+                  />
+
+                  <IconButton
+                    onClick={() => {
+                      setLoop(!loop);
+                      musicService.audio.loop = !musicService.audio.loop;
+                    }}
+                  >
+                    <LoopOutlined color={loop ? "primary" : "inherit"} />
+                  </IconButton>
+
+                  <Typography>{formatTime(time || 0)}</Typography>
+                </Stack>
+              </Grid>
+
+              <Grid xs={2} hidden={!matches}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <IconButton color="primary" onClick={mute}>
+                    {volume !== 0 ? (
+                      <VolumeUpOutlined />
+                    ) : (
+                      <VolumeMuteOutlined />
+                    )}
+                  </IconButton>
+
+                  <Slider
+                    value={volume}
+                    max={1.0}
+                    onChange={volumeChange}
+                    step={0.01}
+                  />
+                </Stack>
+              </Grid>
             </Grid>
-
-            <Grid xs={2} hidden={!matches}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <IconButton color="primary" onClick={mute}>
-                  {volume !== 0 ? <VolumeUpOutlined /> : <VolumeMuteOutlined />}
-                </IconButton>
-
-                <Slider
-                  value={volume}
-                  max={1.0}
-                  onChange={volumeChange}
-                  step={0.01}
-                />
-              </Stack>
-            </Grid>
-          </Grid>
-        </Container>
-      </Toolbar>
-    </AppBar>
+          </Container>
+        </Toolbar>
+      </AppBar>
+      {!matches ? <Toolbar /> : ""}
+      <Toolbar />
+    </>
   );
 }

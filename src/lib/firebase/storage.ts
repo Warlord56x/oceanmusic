@@ -41,7 +41,6 @@ export async function fetchAndCacheImage(url: string, imageId: string) {
 
     const db = target.result;
     db.createObjectStore("images");
-    console.log("Creating store");
   };
 
   dbRequest.onsuccess = (event) => {
