@@ -1,5 +1,9 @@
 import ListItemButton from "@mui/material/ListItemButton";
-import { MoreVertOutlined, PlayArrowOutlined } from "@mui/icons-material";
+import {
+  MoreVertOutlined,
+  PauseOutlined,
+  PlayArrowOutlined,
+} from "@mui/icons-material";
 import ListItemText from "@mui/material/ListItemText";
 import { Music } from "@/lib/data/music";
 import {
@@ -9,15 +13,16 @@ import {
   Menu,
   MenuItem,
 } from "@mui/material";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { shortener } from "@/_utils/formatUtils";
+import musicService from "@/_services/musicService";
 
 type musicProps = {
   music: Music;
   index: number;
   selectedIndex: number;
-  itemClick: (index: number, ...args: any) => void;
+  itemClick: (index: number) => void;
 };
 
 export default function MusicItem({
@@ -28,6 +33,7 @@ export default function MusicItem({
 }: musicProps) {
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -36,11 +42,20 @@ export default function MusicItem({
     setAnchorEl(null);
   };
 
+  useEffect(() => {
+    const sub = musicService.onPlayStateChange((state) => {
+      if (music === musicService.music || !state) {
+        setIsPlaying(state);
+      }
+    });
+    return () => sub.unsubscribe();
+  }, [music]);
+
   return (
     <ListItemButton
       key={music.name + index}
       selected={selectedIndex === index}
-      onClick={() => itemClick(index, true)}
+      onClick={() => itemClick(index)}
     >
       <ListItemAvatar>
         <Avatar alt={music.name} src={music.cover} />
@@ -51,8 +66,15 @@ export default function MusicItem({
         secondary={shortener(music.description)}
       />
 
-      <IconButton color="primary" onClick={() => itemClick(index)}>
-        <PlayArrowOutlined />
+      <IconButton
+        color="primary"
+        onClick={(e) => {
+          e.stopPropagation();
+          itemClick(index);
+          musicService.isPlaying ? musicService.pause() : musicService.play();
+        }}
+      >
+        {isPlaying ? <PauseOutlined /> : <PlayArrowOutlined />}
       </IconButton>
       <IconButton color="primary" onClick={handleClick}>
         <MoreVertOutlined />

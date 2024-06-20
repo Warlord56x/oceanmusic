@@ -1,4 +1,5 @@
 import { Music } from "@/lib/data/music";
+import { Observable, Subject } from "rxjs";
 
 class MusicService {
   public isPlaying = false;
@@ -16,13 +17,20 @@ class MusicService {
   private readonly highPassFilter;
 
   private _music!: Music;
-  private cb!: (state: boolean) => void;
+
+  private musicSubject = new Subject<Music>();
+  private musicObserver = this.musicSubject.asObservable();
+
+  private musicPlayingSubject = new Subject<boolean>();
+  private musicPlaying$ = this.musicPlayingSubject.asObservable();
 
   set music(music: Music) {
     this.audio.src = music.audio;
     this._music = music;
     this.isPlaying = false;
-    this.cb(false);
+    this.musicPlayingSubject.next(false);
+    this.musicSubject.next(music);
+    console.log(this.audio.duration);
   }
 
   get music() {
@@ -30,7 +38,11 @@ class MusicService {
   }
 
   onPlayStateChange(cb: (state: boolean) => void) {
-    this.cb = cb;
+    return this.musicPlaying$.subscribe(cb);
+  }
+
+  onMusicChange(cb: (music: Music) => void) {
+    return this.musicObserver.subscribe(cb);
   }
 
   set src(src: string) {
@@ -48,13 +60,13 @@ class MusicService {
     this.audio.play();
     this.audioContext.resume();
     this.isPlaying = true;
-    this.cb(true);
+    this.musicPlayingSubject.next(true);
   }
 
   pause() {
     this.audio.pause();
     this.isPlaying = false;
-    this.cb(false);
+    this.musicPlayingSubject.next(false);
   }
 
   constructor() {

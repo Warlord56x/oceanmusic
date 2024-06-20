@@ -29,6 +29,69 @@ function generateFirestoreId(): string {
   return id;
 }
 
+// Function to fetch and cache a file
+export async function fetchAndCacheImage(url: string, imageId: string) {
+  const response = await fetch(url);
+  const blob = await response.blob();
+
+  // Open IndexedDB
+  const dbRequest = indexedDB.open("image-cache", 3);
+  dbRequest.onupgradeneeded = (event) => {
+    const target = event.target as IDBOpenDBRequest;
+
+    const db = target.result;
+    db.createObjectStore("images");
+    console.log("Creating store");
+  };
+
+  dbRequest.onsuccess = (event) => {
+    const target = event.target as IDBOpenDBRequest;
+
+    const db = target.result;
+
+    const transaction = db.transaction(["images"], "readwrite");
+    const store = transaction.objectStore("images");
+    store.put(blob, imageId);
+  };
+}
+
+// Function to retrieve a cached image
+export async function getCachedImage(imageId: string) {
+  return new Promise((resolve, reject) => {
+    const dbRequest = indexedDB.open("image-cache", 3);
+    dbRequest.onupgradeneeded = (event) => {
+      const target = event.target as IDBOpenDBRequest;
+
+      const db = target.result;
+      db.createObjectStore("images");
+      console.log("Creating store");
+    };
+
+    dbRequest.onsuccess = (event) => {
+      const target = event.target as IDBOpenDBRequest;
+
+      const db = target.result;
+      if (!db.objectStoreNames.contains("images")) {
+        reject("No store");
+        return;
+      }
+      const transaction = db.transaction(["images"], "readonly");
+      const store = transaction.objectStore("images");
+      const request = store.get(imageId);
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    };
+
+    dbRequest.onerror = () => {
+      reject(dbRequest.error);
+    };
+  });
+}
+
 export async function updateMusic(musicId: string, music: Music) {
   // TODO: update!
 }

@@ -16,6 +16,7 @@ const nextConfig = {
         protocol: "https",
         hostname: "firebasestorage.googleapis.com",
         port: "",
+        pathname: "/v0/b/firemusic-82e06.appspot.com/o/**"
       },
     ],
   },

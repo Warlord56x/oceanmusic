@@ -27,8 +27,27 @@ export default function RootLayout({
         <AppRouterCacheProvider>
           <ThemeProvider theme={theme}>
             <CssBaseline />
-            <Layout>{children}</Layout>
-            <BottomBar />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+              }}
+            >
+              <Layout>{children}</Layout>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  width: "100%",
+                  margin: 0,
+                  padding: 0,
+                }}
+              >
+                <BottomBar />
+              </div>
+            </div>
           </ThemeProvider>
         </AppRouterCacheProvider>
       </body>

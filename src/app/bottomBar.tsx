@@ -30,6 +30,10 @@ import {
   LoginOutlined,
   LogoutOutlined,
   PersonAddOutlined,
+  CloseOutlined,
+  MoreHorizOutlined,
+  MenuOutlined,
+  MoreVertOutlined,
 } from "@mui/icons-material";
 
 import musicService from "@/_services/musicService";
@@ -40,6 +44,10 @@ import LoginModal from "@/components/login";
 import { User } from "firebase/auth";
 import RegisterModal from "@/components/register";
 import UploadModal from "@/components/fileUpload";
+import { shortener } from "@/_utils/formatUtils";
+import { Music } from "@/lib/data/music";
+import { undefined } from "zod";
+import Fade from "@mui/material/Fade";
 
 const VisuallyHiddenInput = styled("input")({
   clipPath: "inset(50%)",
@@ -56,7 +64,7 @@ export default function BottomBar() {
   const [isPlaying, setIsPlaying] = useState<boolean>();
   const [volume, setVolume] = useState<number>(1.0);
   const [time, setTime] = useState<number>(0.0);
-  const [duration, setDuration] = useState<number>(100.0);
+  const [duration, setDuration] = useState<number>(100);
   const [loop, setLoop] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null!);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
@@ -64,6 +72,17 @@ export default function BottomBar() {
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
+  const [dialOpen, setDialOpen] = useState(false);
+  const [music, setMusic] = useState<Music>({
+    uid: "me",
+    audio: "",
+    author: "Nobody",
+    tags: [],
+    uploadDate: new Date(),
+    name: "None",
+    description: "Hosszu desc meg minden",
+    cover: "/vercel.svg",
+  });
 
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.up("sm"));
@@ -75,7 +94,6 @@ export default function BottomBar() {
   const play = () => {
     setIsPlaying(true);
     musicService.play();
-    setDuration(musicService.audio.duration);
   };
 
   const pause = () => {
@@ -109,11 +127,19 @@ export default function BottomBar() {
     };
 
     musicService.audio.addEventListener("timeupdate", timeUpdate);
-    musicService.onPlayStateChange((state) => {
+    const sub = musicService.onPlayStateChange((state) => {
       setIsPlaying(state);
+      if (state) {
+        setDuration(musicService.audio.duration);
+      }
+    });
+    const musicSub = musicService.onMusicChange((music) => {
+      setMusic(music);
     });
 
     return () => {
+      sub.unsubscribe();
+      musicSub.unsubscribe();
       musicService.audio.removeEventListener("timeupdate", timeUpdate);
     };
   }, []);
@@ -123,6 +149,7 @@ export default function BottomBar() {
     if (isPlaying) {
       pause();
     }
+    console.log(e.target.value);
     const newTime = e.target.value;
     musicService.audio.currentTime = newTime;
     setTime(newTime);
@@ -187,7 +214,7 @@ export default function BottomBar() {
   }, []);
 
   return (
-    <AppBar position="fixed" color="primary" sx={{ top: "auto", bottom: 0 }}>
+    <AppBar color="primary" position="sticky" style={{ margin: 0, padding: 0 }}>
       <LoginModal
         open={loginModalOpen}
         onClose={() => setLoginModalOpen(false)}
@@ -201,11 +228,22 @@ export default function BottomBar() {
         onClose={() => setUploadModalOpen(false)}
       />
       <Toolbar>
-        <Container>
+        <Container sx={{ m: 0, p: "0.5rem" }}>
           <SpeedDial
             ariaLabel="SpeedDial basic example"
             sx={{ position: "absolute", bottom: 20, right: 20 }}
-            icon={<SpeedDialIcon />}
+            onOpen={() => setDialOpen(true)}
+            onClose={() => setDialOpen(false)}
+            icon={
+              <>
+                <Fade in={!dialOpen} style={{ position: "absolute" }}>
+                  <MoreHorizOutlined />
+                </Fade>
+                <Fade in={dialOpen}>
+                  <CloseOutlined />
+                </Fade>
+              </>
+            }
           >
             {actions.map((action) => (
               <SpeedDialAction
@@ -224,12 +262,29 @@ export default function BottomBar() {
             />
           </SpeedDial>
 
-          <Grid container spacing={2}>
-            <Grid xs={1}>
-              <Avatar alt="No Image" src={musicService.music?.cover} />
+          <Grid
+            style={{ margin: 0, padding: 0 }}
+            container
+            spacing={2}
+            direction={matches ? "row" : "column"}
+          >
+            <Grid style={{ margin: 0, padding: 0 }} xs="auto">
+              <Stack
+                style={{ margin: 0, padding: 0 }}
+                direction="row"
+                spacing={2}
+              >
+                <Avatar alt="No Image" src={music.cover} />
+                <Stack direction="column" spacing={0}>
+                  <Typography>{shortener(music.name, 10)}</Typography>
+                  <Typography variant="subtitle2">
+                    {shortener(music.description, 8)}
+                  </Typography>
+                </Stack>
+              </Stack>
             </Grid>
 
-            <Grid xs={8}>
+            <Grid xs={10} sm={7}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <IconButton color="primary" onClick={toggle}>
                   {isPlaying ? <PauseOutlined /> : <PlayArrowOutlined />}

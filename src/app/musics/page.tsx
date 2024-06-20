@@ -31,54 +31,65 @@ export default function Musics() {
     };
   }, []);
 
-  const handleListItemClick = (index: number, noPlay: boolean = false) => {
+  const handleListItemClick = (index: number) => {
     setSelectedIndex(index);
 
     if (musicService.music !== musics[index]) {
       musicService.music = musics[index];
     }
-
-    if (noPlay) return;
-    musicService.play();
   };
 
   return (
-    <Container>
+    <Container
+      sx={{ display: "flex", height: "100%", flexDirection: "column" }}
+    >
       <Typography pt={2} variant="h3">
         List of musics
       </Typography>
 
-      <List>
+      <div style={{ height: "100%" }}>
+        <List>
+          {onPage.map((music, index) => (
+            <Suspense
+              key={music.name + index}
+              fallback={
+                <ListItem>
+                  <Skeleton variant="circular" width={32} height={32} />
+                  <Skeleton
+                    variant="text"
+                    sx={{ fontSize: "2rem", width: "100%" }}
+                  />
+                </ListItem>
+              }
+            >
+              <MusicItem
+                music={music}
+                index={index}
+                itemClick={handleListItemClick}
+                selectedIndex={selectedIndex}
+              />
+            </Suspense>
+          ))}
+        </List>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          width: "100%",
+          padding: "1rem",
+        }}
+      >
         <Pagination
-          count={musics.length % 10}
+          count={Math.ceil(musics.length / 10)}
           page={page}
           onChange={(_, value) => {
             setPage(value);
             setOnPage(musics.slice((value - 1) * 10, value * 10));
           }}
         />
-        {onPage.map((music, index) => (
-          <Suspense
-            key={music.name + index}
-            fallback={
-              <ListItem>
-                <Skeleton variant="circular" width={32} height={32} />
-                <Skeleton
-                  variant="text"
-                  sx={{ fontSize: "2rem", width: "100%" }}
-                />
-              </ListItem>
-            }
-          >
-            <MusicItem
-              music={music}
-              index={index}
-              itemClick={handleListItemClick}
-              selectedIndex={selectedIndex}
-            />
-          </Suspense>
-        ))}
-      </List>
+      </div>
     </Container>
   );
 }

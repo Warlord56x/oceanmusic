@@ -122,19 +122,6 @@ function ImageParticles() {
     shaderRef.current.uniforms["uMousePos"].value.copy(event.point);
   };
 
-  const onPointerDown = (e: ThreeEvent<any>) => {
-    // Only the mesh closest to the camera will be processed
-    e.stopPropagation();
-    // You may optionally capture the target
-    e.target.setPointerCapture(e.pointerId);
-    onPointerMove(e as ThreeEvent<MouseEvent>);
-  };
-  const onPointerUp = (e: ThreeEvent<any>) => {
-    e.stopPropagation();
-    // Optionally release capture
-    e.target.releasePointerCapture(e.pointerId);
-  };
-
   useFrame((state) => {
     const { clock } = state;
 
@@ -148,11 +135,11 @@ function ImageParticles() {
       <Plane
         ref={planeRef}
         args={[512, 512]}
-        position={[0, 0, -0]}
+        position={[0, 0, 0]}
         visible={false}
         onPointerMove={onPointerMove}
       />
-      <points ref={pointsRef}>
+      <points ref={pointsRef} visible={true}>
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
@@ -198,10 +185,8 @@ function ImageParticles() {
 export default function Home() {
   return (
     <div style={{ height: "100%" }}>
-      <View orbit fixed style={{ height: "100%" }}>
-        <Center>
-          <ImageParticles />
-        </Center>
+      <View far style={{ height: "100%" }}>
+        <ImageParticles />
       </View>
     </div>
   );
