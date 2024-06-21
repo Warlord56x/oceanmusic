@@ -1,7 +1,5 @@
 "use client";
 
-import AppBar from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   IconButton,
@@ -13,7 +11,8 @@ import {
   useTheme,
   SpeedDialAction,
   SpeedDial,
-  Avatar,
+  AppBar,
+  Toolbar,
 } from "@mui/material";
 import {
   PlayArrowOutlined,
@@ -36,6 +35,7 @@ import {
 import musicService from "@/_services/musicService";
 import Grid from "@mui/system/Unstable_Grid";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { onAuthStateChanged, signOut } from "@/lib/firebase/auth";
 import LoginModal from "@/components/login";
 import { User } from "firebase/auth";
@@ -254,7 +254,12 @@ export default function BottomBar() {
             >
               <Grid sx={{ m: 0, p: 0 }} xs="auto">
                 <Stack sx={{ m: 0, p: 0 }} direction="row" spacing={2}>
-                  <Avatar alt="No Image" src={music.cover} />
+                  <Image
+                    src={music.cover || "vercel.svg"}
+                    width={50}
+                    height={50}
+                    alt={music.name}
+                  />
                   <Stack direction="column" spacing={0}>
                     <Typography>{shortener(music.name, 10)}</Typography>
                     <Typography variant="caption">

@@ -124,7 +124,11 @@ export default function UploadModal(props: {
               <div style={{ display: "flex", justifyContent: "center" }}>
                 <Image
                   alt="cover picture"
-                  src={URL.createObjectURL(formik.values.cover)}
+                  src={
+                    formik.values.cover.name !== "None"
+                      ? URL.createObjectURL(formik.values.cover)
+                      : "vercel.svg"
+                  }
                   width={100}
                   height={100}
                 />

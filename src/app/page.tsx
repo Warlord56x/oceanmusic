@@ -82,17 +82,17 @@ function ImageParticles() {
       const x = i % sizeWidth;
       const y = Math.floor(i / sizeWidth);
 
-      const r = imageData[index];
-      const g = imageData[index + 1];
-      const b = imageData[index + 2];
+      const r = imageData[index] / 255;
+      const g = imageData[index + 1] / 255;
+      const b = imageData[index + 2] / 255;
       const brightness = r * 0.2126 + g * 0.7152 + b * 0.0722;
-      let z = (brightness / 255) * 10; // Adjust the scaling factor for depth
+      let z = brightness * 10; // Adjust the scaling factor for depth
 
-      if (brightness / 255 < 0.9) continue;
+      if (brightness < 0.9) continue;
 
-      colors[i * 3] = r / 255;
-      colors[i * 3 + 1] = g / 255;
-      colors[i * 3 + 2] = b / 255;
+      colors[i * 3] = r;
+      colors[i * 3 + 1] = g;
+      colors[i * 3 + 2] = b;
 
       positions[i * 3] = x - sizeWidth / 2;
       positions[i * 3 + 1] = y - sizeHeight / 2;

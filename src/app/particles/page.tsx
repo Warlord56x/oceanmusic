@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import vertexShader from "./shaders/vertex.glsl";
 import fragmentShader from "./shaders/fragment.glsl";
@@ -57,7 +57,6 @@ function Particles() {
   const points = useRef<THREE.Points>(null!);
   const pointsGeometry = useRef<THREE.BufferGeometry>(null!);
   const pointsMatRef = useRef<THREE.ShaderMaterial>(null!);
-  const [modelScale, setModelScale] = useState<number>(1.0);
   const gui = useRef(
     (function () {
       const lilGUI = new GUI({ title: "Shader uniforms" });
@@ -70,20 +69,23 @@ function Particles() {
         .addColor(uniformDefaults, "colorFrom")
         .name("Original")
         .onChange((value: string) => {
-          pointsMatRef.current.uniforms.uColorFrom.value = new THREE.Color(
-            value,
+          if (!pointsMatRef.current) return;
+          pointsMatRef.current.uniforms.uColorFrom.value.copy(
+            new THREE.Color(value),
           );
         });
       colors
         .addColor(uniformDefaults, "colorTo")
         .name("Blend")
         .onChange((value: string) => {
+          if (!pointsMatRef.current) return;
           pointsMatRef.current.uniforms.uColorTo.value = new THREE.Color(value);
         });
       colors
         .add(uniformDefaults, "colorBlend", 0, 1, 0.01)
         .name("Blend factor")
         .onChange((value: number) => {
+          if (!pointsMatRef.current) return;
           pointsMatRef.current.uniforms.uColorBlend.value = value;
         });
 
@@ -91,20 +93,26 @@ function Particles() {
         .add(uniformDefaults, "particleSize", 0, 20, 1)
         .name("Particle Size")
         .onChange((value: number) => {
+          if (!pointsMatRef.current) return;
           pointsMatRef.current.uniforms.uSize.value = value;
         });
 
       properties
-        .add(uniformDefaults, "modelScale", 0.01, 10, 0.0001)
+        .add(uniformDefaults, "modelScale", 0.01, 100, 0.0001)
         .name("Model Scale")
         .onChange((value: number) => {
-          setModelScale(value);
+          //setModelScale(value);
+          if (!points.current) return;
+          points.current.scale.set(value, value, value);
         });
+
+      lilGUI.onFinishChange(() =>
+        localStorage.setItem("gui", JSON.stringify(lilGUI.save())),
+      );
 
       if (guiSave) {
         lilGUI.load(JSON.parse(guiSave));
       }
-      console.log(guiSave);
       return lilGUI;
     })(),
   );
@@ -202,7 +210,10 @@ function Particles() {
   useEffect(() => {
     let scale = 1.0;
 
-    const properties = gui.current.children[1] as GUI;
+    const lilGUI = gui.current;
+    const properties = lilGUI.folders.filter(
+      (f) => f._title == "Properties",
+    )[0] as GUI;
 
     properties
       .add(uniformDefaults, "geometryScale", 1, 100, 1)
@@ -214,6 +225,7 @@ function Particles() {
 
         scale = value;
         points.current.geometry.scale(value, value, value);
+        console.log(points.current);
       });
 
     const guiSave = localStorage.getItem("gui");
@@ -222,14 +234,14 @@ function Particles() {
     }
 
     return () => {
-      localStorage.setItem("gui", JSON.stringify(gui.current.save()));
-      gui.current.destroy();
+      localStorage.setItem("gui", JSON.stringify(lilGUI.save()));
+      lilGUI.destroy();
     };
-  }, []);
+  }, [uniformDefaults]);
 
   return (
     <group>
-      <points ref={points} scale={modelScale}>
+      <points ref={points}>
         <bufferGeometry ref={pointsGeometry}>
           <bufferAttribute
             attach="attributes-position"

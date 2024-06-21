@@ -9,11 +9,12 @@ import {
 } from "firebase/auth";
 
 import { auth } from "./clientApp";
+import { addUser } from "@/lib/firebase/firestore";
 
 let user: User | null;
 
-export function getUserId() {
-  return user!.uid;
+export function getUser() {
+  return user!;
 }
 
 export function onAuthStateChanged(cb: (user: User | null) => void) {
@@ -41,6 +42,7 @@ export async function signUp(
   try {
     await createUserWithEmailAndPassword(auth, email, password).then((user) => {
       updateProfile(user.user, { displayName: displayName });
+      addUser(user.user);
     });
   } catch (error) {
     throw error;

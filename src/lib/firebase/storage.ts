@@ -10,7 +10,7 @@ import {
 import { storage } from "./clientApp";
 
 import { Music } from "@/lib/data/music";
-import { getUserId } from "@/lib/firebase/auth";
+import { getUser } from "@/lib/firebase/auth";
 import { addMusic } from "@/lib/firebase/firestore";
 import { forkJoin, from, Observable, switchMap } from "rxjs";
 
@@ -91,8 +91,34 @@ export async function getCachedImage(imageId: string) {
   });
 }
 
-export async function updateMusic(musicId: string, music: Music) {
-  // TODO: update!
+export async function getImage(m: Music) {
+  let music = m;
+  if (m.cover && m.musicId) {
+    await getCachedImage(m.musicId)
+      .then((data) => {
+        if (data) {
+          m.cover = URL.createObjectURL(data as Blob);
+          music = m;
+          return;
+        }
+        throw new Error();
+      })
+      .catch(() => {
+        if (m.cover && m.musicId) {
+          fetchAndCacheImage(m.cover, m.musicId).then(() => {
+            if (m.cover && m.musicId) {
+              getCachedImage(m.musicId).then((data) => {
+                if (data) {
+                  m.cover = URL.createObjectURL(data as Blob);
+                  music = m;
+                }
+              });
+            }
+          });
+        }
+      });
+  }
+  return music;
 }
 
 export function uploadMusic(
@@ -103,8 +129,8 @@ export function uploadMusic(
   completeCallback: () => void = () => {},
 ) {
   const id = generateFirestoreId();
-  const filePath = `public/${getUserId() || "null"}/music/${id}/${file.name}`;
-  const fileCoverPath = `public/${getUserId() || "null"}/image/${id}/${cover.name}`;
+  const filePath = `public/${getUser().uid || "null"}/music/${id}/${file.name}`;
+  const fileCoverPath = `public/${getUser().uid || "null"}/image/${id}/${cover.name}`;
   const newMusicRef = ref(storage, filePath);
   const newCoverRef = ref(storage, fileCoverPath);
 
@@ -146,7 +172,7 @@ export function uploadMusic(
           cover: coverUrl as string,
           name: name,
           tags: [],
-          uid: getUserId(),
+          uid: getUser().uid,
           uploadDate: new Date(),
         };
         return from(addMusic(music, id));

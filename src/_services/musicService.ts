@@ -1,6 +1,5 @@
 import { Music } from "@/lib/data/music";
-import { Observable, Subject } from "rxjs";
-import { bool } from "yup";
+import { Subject } from "rxjs";
 
 class MusicService {
   public isPlaying = false;
@@ -131,5 +130,5 @@ class MusicService {
   }
 }
 
-const dataService = new MusicService();
-export default dataService;
+const musicService = new MusicService();
+export default musicService;
