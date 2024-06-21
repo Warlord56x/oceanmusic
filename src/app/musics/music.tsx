@@ -48,7 +48,16 @@ export default function MusicItem({
         setIsPlaying(state);
       }
     });
-    return () => sub.unsubscribe();
+
+    const musicSub = musicService.onMusicChange((_music) => {
+      if (_music !== music) {
+        setIsPlaying(false);
+      }
+    });
+    return () => {
+      musicSub.unsubscribe();
+      sub.unsubscribe();
+    };
   }, [music]);
 
   return (

@@ -2,7 +2,7 @@
 
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   IconButton,
   Slider,
@@ -12,11 +12,9 @@ import {
   Stack,
   useTheme,
   SpeedDialAction,
-  SpeedDialIcon,
   SpeedDial,
   Avatar,
 } from "@mui/material";
-import { styled } from "@mui/material/styles";
 import {
   PlayArrowOutlined,
   PauseOutlined,
@@ -32,8 +30,6 @@ import {
   PersonAddOutlined,
   CloseOutlined,
   MoreHorizOutlined,
-  MenuOutlined,
-  MoreVertOutlined,
 } from "@mui/icons-material";
 
 import musicService from "@/_services/musicService";
@@ -46,20 +42,7 @@ import RegisterModal from "@/components/register";
 import UploadModal from "@/components/fileUpload";
 import { shortener } from "@/_utils/formatUtils";
 import { Music } from "@/lib/data/music";
-import { undefined } from "zod";
 import Fade from "@mui/material/Fade";
-import * as eruda from "eruda";
-
-const VisuallyHiddenInput = styled("input")({
-  clipPath: "inset(50%)",
-  height: 1,
-  overflow: "hidden",
-  position: "absolute",
-  bottom: 0,
-  left: 0,
-  whiteSpace: "nowrap",
-  width: 1,
-});
 
 export default function BottomBar() {
   const [isPlaying, setIsPlaying] = useState<boolean>();
@@ -67,7 +50,6 @@ export default function BottomBar() {
   const [time, setTime] = useState<number>(0.0);
   const [duration, setDuration] = useState<number>(100);
   const [loop, setLoop] = useState<boolean>(false);
-  const fileInputRef = useRef<HTMLInputElement>(null!);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
@@ -87,10 +69,6 @@ export default function BottomBar() {
 
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.up("sm"));
-
-  const upload = (event: any) => {
-    musicService.src = URL.createObjectURL(event.target.files[0]);
-  };
 
   const play = () => {
     setIsPlaying(true);
@@ -124,35 +102,36 @@ export default function BottomBar() {
 
   useEffect(() => {
     const timeUpdate = () => {
-      setTime(musicService.audio.currentTime);
+      setTime(musicService.currentTime);
     };
 
-    musicService.audio.addEventListener("timeupdate", timeUpdate);
+    musicService.timeUpdate(timeUpdate);
     const sub = musicService.onPlayStateChange((state) => {
       setIsPlaying(state);
       if (state) {
-        setDuration(musicService.audio.duration);
+        setTime(musicService.currentTime);
       }
     });
     const musicSub = musicService.onMusicChange((music) => {
       setMusic(music);
+      setDuration(100.0);
+      setTime(0.0);
     });
 
     return () => {
       sub.unsubscribe();
       musicSub.unsubscribe();
-      musicService.audio.removeEventListener("timeupdate", timeUpdate);
+      musicService.removerTimeUpdate(timeUpdate);
     };
-  }, []);
+  }, [duration, time]);
 
   // Update the audio playback position when the slider changes
-  const updateSlider = (e: any) => {
+  const updateSlider = (_: Event, value: number | number[]) => {
     if (isPlaying) {
       pause();
     }
-    const newTime = e.target.value;
-    musicService.audio.currentTime = newTime;
-    setTime(newTime);
+    musicService.currentTime = value as number;
+    setTime(value as number);
   };
 
   const formatTime = (duration: number) => {
@@ -259,12 +238,6 @@ export default function BottomBar() {
                   onClick={action.action}
                 />
               ))}
-              <VisuallyHiddenInput
-                ref={fileInputRef}
-                type="file"
-                accept="audio/*"
-                onChange={upload}
-              />
             </SpeedDial>
 
             <Grid
@@ -273,12 +246,8 @@ export default function BottomBar() {
               spacing={2}
               direction={matches ? "row" : "column"}
             >
-              <Grid style={{ margin: 0, padding: 0 }} xs="auto">
-                <Stack
-                  style={{ margin: 0, padding: 0 }}
-                  direction="row"
-                  spacing={2}
-                >
+              <Grid sx={{ m: 0, p: 0 }} xs="auto">
+                <Stack sx={{ m: 0, p: 0 }} direction="row" spacing={2}>
                   <Avatar alt="No Image" src={music.cover} />
                   <Stack direction="column" spacing={0}>
                     <Typography>{shortener(music.name, 10)}</Typography>
@@ -299,6 +268,8 @@ export default function BottomBar() {
                     value={time}
                     onChange={updateSlider}
                     max={duration}
+                    valueLabelDisplay="auto"
+                    valueLabelFormat={formatTime}
                     onChangeCommitted={() => {
                       play();
                     }}
@@ -307,7 +278,7 @@ export default function BottomBar() {
                   <IconButton
                     onClick={() => {
                       setLoop(!loop);
-                      musicService.audio.loop = !musicService.audio.loop;
+                      musicService.loop = !musicService.loop;
                     }}
                   >
                     <LoopOutlined color={loop ? "primary" : "inherit"} />

@@ -1,5 +1,6 @@
 import { Music } from "@/lib/data/music";
 import { Observable, Subject } from "rxjs";
+import { bool } from "yup";
 
 class MusicService {
   public isPlaying = false;
@@ -8,7 +9,7 @@ class MusicService {
   public midAnalyser!: AnalyserNode;
   public trebleAnalyser!: AnalyserNode;
 
-  public audio!: HTMLAudioElement;
+  private readonly audio!: HTMLAudioElement;
   private audioContext!: AudioContext;
   private source!: MediaElementAudioSourceNode;
 
@@ -30,7 +31,6 @@ class MusicService {
     this.isPlaying = false;
     this.musicPlayingSubject.next(false);
     this.musicSubject.next(music);
-    console.log(this.audio.duration);
   }
 
   get music() {
@@ -45,15 +45,34 @@ class MusicService {
     return this.musicObserver.subscribe(cb);
   }
 
-  set src(src: string) {
-    this.audio.src = src;
-    this.play();
-  }
-
   set volume(volume: number) {
     if (this.audio) {
       this.audio.volume = volume;
     }
+  }
+
+  timeUpdate(cb: () => void) {
+    this.audio.addEventListener("timeupdate", cb);
+  }
+
+  removerTimeUpdate(cb: () => void) {
+    this.audio.removeEventListener("timeupdate", cb);
+  }
+
+  set loop(state: boolean) {
+    this.audio.loop = state;
+  }
+
+  get loop() {
+    return this.audio.loop;
+  }
+
+  set currentTime(time: number) {
+    this.audio.currentTime = time;
+  }
+
+  get currentTime() {
+    return this.audio.currentTime;
   }
 
   play() {

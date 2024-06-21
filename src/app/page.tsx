@@ -1,9 +1,10 @@
 "use client";
+
+import * as THREE from "three";
 import dynamic from "next/dynamic";
 import { CircularProgress } from "@mui/material";
-import { useEffect, useMemo, useRef } from "react";
-import { Center, Plane, useTexture } from "@react-three/drei";
-import * as THREE from "three";
+import { useMemo, useRef } from "react";
+import { Plane, useTexture } from "@react-three/drei";
 import vertexShader from "./mainShaders/vertex.glsl";
 import fragmentShader from "./mainShaders/fragment.glsl";
 import { ThreeEvent, useFrame } from "@react-three/fiber";
