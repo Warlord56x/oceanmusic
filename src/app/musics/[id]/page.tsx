@@ -55,69 +55,32 @@ function Cover({ url }: CoverProps) {
       uTouchTexture: {
         value: touchTexture.current.texture,
       },
+      uTexture: {
+        value: texture,
+      },
       uTime: {
         value: 0.0,
       },
-      uMousePos: {
-        value: new THREE.Vector3(0, 0, 0),
-      },
     }),
-    [],
+    [texture],
   );
 
   // particle positions
-  const { positions, colors, uvs, angles } = useMemo(() => {
-    const image = texture.image;
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
-    canvas.width = sizeWidth;
-    canvas.height = sizeHeight;
-    context!.scale(1, -1); // flip y
-    context!.drawImage(image, 0, 0, sizeWidth, sizeHeight * -1);
-
-    const imageData = context!.getImageData(0, 0, sizeWidth, sizeHeight).data;
+  const { angles } = useMemo(() => {
     const numParticles = sizeWidth * sizeHeight;
-    const colors = new Float32Array(numParticles * 3);
-    const positions = new Float32Array(numParticles * 3);
-    const uvs = new Float32Array(numParticles * 2);
     const angles = new Float32Array(numParticles);
 
-    for (let index = 0; index < imageData.length; index += 4) {
-      const i = index / 4;
-      const x = i % sizeWidth;
-      const y = Math.floor(i / sizeWidth);
-
-      const r = imageData[index];
-      const g = imageData[index + 1];
-      const b = imageData[index + 2];
-      const brightness = r * 0.2126 + g * 0.7152 + b * 0.0722;
-      let z = (brightness / 255) * 10; // Adjust the scaling factor for depth
-
-      colors[i * 3] = r / 255;
-      colors[i * 3 + 1] = g / 255;
-      colors[i * 3 + 2] = b / 255;
-
-      positions[i * 3] = x - sizeWidth / 2;
-      positions[i * 3 + 1] = y - sizeHeight / 2;
-      positions[i * 3 + 2] = z;
-
-      uvs[i * 2] = x / sizeWidth;
-      uvs[i * 2 + 1] = y / sizeHeight;
-
-      angles[i] = Math.random() * Math.PI; // Generate random angle
+    for (let index = 0; index < numParticles; index++) {
+      angles[index] = Math.random() * Math.PI; // Generate random angle
     }
 
     return {
-      positions,
-      colors,
-      uvs,
       angles,
     };
-  }, [texture]);
+  }, []);
 
   const onPointerMove = (event: ThreeEvent<MouseEvent>) => {
     touchTexture.current.addTouch({ x: event.point.x, y: event.point.y });
-    shaderRef.current.uniforms["uMousePos"].value.copy(event.point);
   };
 
   useFrame((state) => {
@@ -132,51 +95,27 @@ function Cover({ url }: CoverProps) {
     <group>
       <Plane
         ref={planeRef}
-        args={[512, 512]}
+        args={[sizeWidth, sizeHeight]}
         position={[0, 0, 0]}
         visible={false}
         onPointerMove={onPointerMove}
       />
-      <mesh>
-        <planeGeometry args={[512, 512]} />
-        <meshStandardMaterial side={THREE.DoubleSide} />
-      </mesh>
       <points ref={pointsRef}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            count={positions.length / 3}
-            array={positions}
-            itemSize={3}
-          />
-
-          <bufferAttribute
-            attach="attributes-color"
-            count={colors.length / 3}
-            array={colors}
-            itemSize={3}
-          />
-
-          <bufferAttribute
-            attach="attributes-uv"
-            count={uvs.length / 2}
-            array={uvs}
-            itemSize={2}
-          />
-
+        <planeGeometry
+          args={[sizeWidth, sizeHeight, sizeWidth - 1, sizeHeight - 1]}
+        >
           <bufferAttribute
             attach="attributes-angle"
             count={angles.length}
             array={angles}
             itemSize={1}
           />
-        </bufferGeometry>
+        </planeGeometry>
         <shaderMaterial
           ref={shaderRef}
           uniforms={uniforms}
           vertexShader={vertexShader}
           fragmentShader={fragmentShader}
-          vertexColors
           depthWrite={false}
         />
       </points>
