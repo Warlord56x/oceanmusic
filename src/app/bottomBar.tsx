@@ -30,6 +30,7 @@ import {
   PersonAddOutlined,
   CloseOutlined,
   MoreHorizOutlined,
+  EditOutlined,
 } from "@mui/icons-material";
 
 import musicService from "@/_services/musicService";
@@ -155,6 +156,11 @@ export default function BottomBar() {
   const actions = useMemo(
     () => [
       {
+        icon: <EditOutlined />,
+        name: "Text Editor",
+        action: () => router.push("/editor"),
+      },
+      {
         icon: <ThreeDRotationOutlined />,
         name: "Particles",
         action: () => router.push("/particles"),
@@ -251,7 +257,7 @@ export default function BottomBar() {
                   <Avatar alt="No Image" src={music.cover} />
                   <Stack direction="column" spacing={0}>
                     <Typography>{shortener(music.name, 10)}</Typography>
-                    <Typography variant="subtitle2">
+                    <Typography variant="caption">
                       {shortener(music.description, 8)}
                     </Typography>
                   </Stack>
