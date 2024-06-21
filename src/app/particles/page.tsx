@@ -42,20 +42,6 @@ const View = dynamic(
 const model = "dice.glb";
 
 function Particles() {
-  const { scene } = useGLTF("/" + model);
-  const points = useRef<THREE.Points>(null!);
-  const pointsGeometry = useRef<THREE.BufferGeometry>(null!);
-  const pointsMatRef = useRef<THREE.ShaderMaterial>(null!);
-  const [modelScale, setModelScale] = useState<number>(1.0);
-
-  const nodes = useMemo(
-    () =>
-      scene.children
-        .filter((child) => child.type === "Mesh")
-        .map((child) => child as THREE.Mesh),
-    [scene.children],
-  );
-
   const uniformDefaults = useMemo(
     () => ({
       colorFrom: "#cf1818",
@@ -66,6 +52,69 @@ function Particles() {
       modelScale: 1.0,
     }),
     [],
+  );
+  const { scene } = useGLTF("/" + model);
+  const points = useRef<THREE.Points>(null!);
+  const pointsGeometry = useRef<THREE.BufferGeometry>(null!);
+  const pointsMatRef = useRef<THREE.ShaderMaterial>(null!);
+  const [modelScale, setModelScale] = useState<number>(1.0);
+  const gui = useRef(
+    (function () {
+      const lilGUI = new GUI({ title: "Shader uniforms" });
+      const guiSave = localStorage.getItem("gui");
+
+      const colors = lilGUI.addFolder("Colors");
+      const properties = lilGUI.addFolder("Properties");
+
+      colors
+        .addColor(uniformDefaults, "colorFrom")
+        .name("Original")
+        .onChange((value: string) => {
+          pointsMatRef.current.uniforms.uColorFrom.value = new THREE.Color(
+            value,
+          );
+        });
+      colors
+        .addColor(uniformDefaults, "colorTo")
+        .name("Blend")
+        .onChange((value: string) => {
+          pointsMatRef.current.uniforms.uColorTo.value = new THREE.Color(value);
+        });
+      colors
+        .add(uniformDefaults, "colorBlend", 0, 1, 0.01)
+        .name("Blend factor")
+        .onChange((value: number) => {
+          pointsMatRef.current.uniforms.uColorBlend.value = value;
+        });
+
+      properties
+        .add(uniformDefaults, "particleSize", 0, 20, 1)
+        .name("Particle Size")
+        .onChange((value: number) => {
+          pointsMatRef.current.uniforms.uSize.value = value;
+        });
+
+      properties
+        .add(uniformDefaults, "modelScale", 0.01, 10, 0.0001)
+        .name("Model Scale")
+        .onChange((value: number) => {
+          setModelScale(value);
+        });
+
+      if (guiSave) {
+        lilGUI.load(JSON.parse(guiSave));
+      }
+      console.log(guiSave);
+      return lilGUI;
+    })(),
+  );
+
+  const nodes = useMemo(
+    () =>
+      scene.children
+        .filter((child) => child.type === "Mesh")
+        .map((child) => child as THREE.Mesh),
+    [scene.children],
   );
 
   const particlesPosition = useMemo(() => {
@@ -153,34 +202,8 @@ function Particles() {
   useEffect(() => {
     let scale = 1.0;
 
-    const lilGUI = new GUI({ title: "Shader uniforms" });
-    const colors = lilGUI.addFolder("Colors");
-    const properties = lilGUI.addFolder("Properties");
+    const properties = gui.current.children[1] as GUI;
 
-    colors
-      .addColor(uniformDefaults, "colorFrom")
-      .name("Original")
-      .onChange((value: string) => {
-        pointsMatRef.current.uniforms.uColorFrom.value = new THREE.Color(value);
-      });
-    colors
-      .addColor(uniformDefaults, "colorTo")
-      .name("Blend")
-      .onChange((value: string) => {
-        pointsMatRef.current.uniforms.uColorTo.value = new THREE.Color(value);
-      });
-    colors
-      .add(uniformDefaults, "colorBlend", 0, 1, 0.01)
-      .name("Blend factor")
-      .onChange((value: number) => {
-        pointsMatRef.current.uniforms.uColorBlend.value = value;
-      });
-    properties
-      .add(uniformDefaults, "particleSize", 0, 20, 1)
-      .name("Particle Size")
-      .onChange((value: number) => {
-        pointsMatRef.current.uniforms.uSize.value = value;
-      });
     properties
       .add(uniformDefaults, "geometryScale", 1, 100, 1)
       .name("Geometry Scale")
@@ -192,16 +215,17 @@ function Particles() {
         scale = value;
         points.current.geometry.scale(value, value, value);
       });
-    properties
-      .add(uniformDefaults, "modelScale", 0.01, 10, 0.0001)
-      .name("Model Scale")
-      .onChange((value: number) => {
-        setModelScale(value);
-      });
+
+    const guiSave = localStorage.getItem("gui");
+    if (guiSave) {
+      gui.current.load(JSON.parse(guiSave));
+    }
+
     return () => {
-      lilGUI.destroy();
+      localStorage.setItem("gui", JSON.stringify(gui.current.save()));
+      gui.current.destroy();
     };
-  }, [nodes, uniformDefaults]);
+  }, []);
 
   return (
     <group>
