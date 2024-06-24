@@ -25,6 +25,8 @@ class MusicService {
   private musicPlaying$ = this.musicPlayingSubject.asObservable();
 
   set music(music: Music) {
+    this.audio.pause();
+    this.audioContext.suspend();
     this.audio.src = music.audio;
     this._music = music;
     this.isPlaying = false;
@@ -66,6 +68,10 @@ class MusicService {
     return this.audio.loop;
   }
 
+  get duration() {
+    return this.audio.duration;
+  }
+
   set currentTime(time: number) {
     this.audio.currentTime = time;
   }
@@ -75,14 +81,16 @@ class MusicService {
   }
 
   play() {
-    this.audio.play();
+    this.audio.play().then(() => {
+      this.musicPlayingSubject.next(true);
+    });
     this.audioContext.resume();
     this.isPlaying = true;
-    this.musicPlayingSubject.next(true);
   }
 
   pause() {
     this.audio.pause();
+    this.audioContext.suspend();
     this.isPlaying = false;
     this.musicPlayingSubject.next(false);
   }

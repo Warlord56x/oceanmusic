@@ -1,16 +1,30 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  CSSProperties,
+  ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Music } from "@/lib/data/music";
 import { getMusic } from "@/lib/firebase/firestore";
 import dynamic from "next/dynamic";
 import {
   Card,
+  CardActionArea,
   CardContent,
   CardHeader,
   CircularProgress,
   Typography,
+  Button,
 } from "@mui/material";
+import {
+  ArrowBackOutlined,
+  PlayArrowOutlined,
+  PlaylistAddOutlined,
+} from "@mui/icons-material";
 import { useTexture } from "@react-three/drei";
 import vertexShader from "./shaders/vertex.glsl";
 import fragmentShader from "./shaders/fragment.glsl";
@@ -18,8 +32,9 @@ import * as THREE from "three";
 import TouchTexture from "@/_utils/touchTexture";
 import { ThreeEvent, useFrame } from "@react-three/fiber";
 import GradientTexture from "@/_utils/gradientTexture";
-import { PlayArrowOutlined, PlaylistAddOutlined } from "@mui/icons-material";
-import Button from "@mui/material/Button";
+import { Transition } from "react-transition-group";
+import { useRouter } from "next/navigation";
+import musicService from "@/_services/musicService";
 
 const View = dynamic(
   () => import("@/components/canvas/View").then((mod) => mod.View),
@@ -45,9 +60,9 @@ const View = dynamic(
   },
 );
 
-type CoverProps = { url: string };
+type CoverProps = { url: string; rotate: boolean };
 
-function Cover({ url }: CoverProps) {
+function Cover({ url, rotate }: CoverProps) {
   const texture = useTexture(url);
   const pointsRef = useRef<THREE.Points>(null!);
   const shaderRef = useRef<THREE.ShaderMaterial>(null!);
@@ -101,6 +116,7 @@ function Cover({ url }: CoverProps) {
     const { clock } = state;
 
     shaderRef.current.uniforms["uTime"].value = clock.elapsedTime;
+
     touchTexture.current.update(clock.elapsedTime);
     touchTexture.current.texture.needsUpdate = true;
   });
@@ -134,13 +150,58 @@ function Cover({ url }: CoverProps) {
   );
 }
 
+function Move({
+  in: inProp,
+  children,
+  duration = 300,
+}: {
+  in: boolean;
+  children: ReactNode;
+  duration?: number;
+}) {
+  const defaultStyle: CSSProperties = {
+    transition: `transform ${duration}ms ease-in-out`,
+    transform: "translateX(0)",
+  };
+
+  const transitionStyles: { [key: string]: CSSProperties } = {
+    entering: { transform: "translateX(-8px)" },
+    entered: { transform: "translateX(-8px)" },
+    exiting: { transform: "translateX(0)" },
+    exited: { transform: "translateX(0)" },
+  };
+
+  const nodeRef = useRef(null);
+  return (
+    <Transition nodeRef={nodeRef} in={inProp} timeout={duration}>
+      {(state) => (
+        <div
+          ref={nodeRef}
+          style={{
+            ...defaultStyle,
+            ...transitionStyles[state],
+          }}
+        >
+          {children}
+        </div>
+      )}
+    </Transition>
+  );
+}
+
 export default function Page({ params }: { params: { id: string } }) {
   const [music, setMusic] = useState<Music>(null!);
+  const [backButton, setBackButton] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     getMusic(params.id).then((m) => {
       setMusic(m);
     });
+
+    const sub = musicService.onPlayStateChange((state) => setIsPlaying(state));
+    return () => sub.unsubscribe();
   }, [params.id]);
 
   if (music === null || music.cover === null) {
@@ -164,7 +225,7 @@ export default function Page({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div style={{ height: "100%", padding: "0 0 2rem 2rem" }}>
+    <div style={{ height: "100%", padding: "2rem 2rem 2rem 2rem" }}>
       <div
         style={{
           width: "100%",
@@ -174,65 +235,92 @@ export default function Page({ params }: { params: { id: string } }) {
           position: "fixed",
         }}
       >
-        <View orbit far style={{ height: "100%" }}>
-          <Cover url={music?.cover || "/next.svg"} />
+        <View far style={{ height: "100%" }}>
+          <Cover url={music?.cover || "/next.svg"} rotate={isPlaying} />
         </View>
       </div>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "flex-end",
-          height: "100%",
-          width: "100%",
-          margin: 0,
-          padding: 0,
-        }}
-      >
-        <Card variant="outlined">
-          <CardHeader title={music?.name} subheader={music?.author} />
 
-          <CardContent>
-            <div style={{ display: "flex" }}>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                <Typography paragraph>{music?.description}</Typography>
+      <div style={{ display: "flex", height: "100%", flexDirection: "column" }}>
+        <div style={{ display: "flex" }}>
+          <Card variant="outlined">
+            <CardActionArea
+              onPointerEnter={() => setBackButton(true)}
+              onPointerLeave={() => setBackButton(false)}
+              onClick={() => router.back()}
+            >
+              <CardContent sx={{ display: "flex" }}>
+                <Move in={backButton}>
+                  <ArrowBackOutlined />
+                </Move>
+                <Typography display="inline">Back</Typography>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "flex-end",
+            height: "100%",
+            width: "100%",
+            margin: 0,
+            padding: 0,
+          }}
+        >
+          <Card variant="outlined" sx={{ maxWidth: 400 }}>
+            <CardHeader title={music?.name} subheader={music?.author} />
 
+            <CardContent>
+              <div style={{ display: "flex" }}>
                 <div
                   style={{
                     display: "flex",
-                    flexDirection: "row",
-                    height: "100%",
-                    alignItems: "flex-end",
+                    flexDirection: "column",
+                    wordBreak: "break-all",
                   }}
                 >
-                  <Typography variant="caption">
-                    Uploaded on: {music?.uploadDate.toLocaleDateString()}
-                  </Typography>
+                  <Typography paragraph>{music?.description}</Typography>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      height: "100%",
+                      alignItems: "flex-end",
+                    }}
+                  >
+                    <Typography variant="caption">
+                      Uploaded on: {music?.uploadDate.toLocaleDateString()}
+                    </Typography>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    padding: "0 1rem",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <Button
+                    variant="outlined"
+                    endIcon={<PlayArrowOutlined />}
+                    onClick={() => {
+                      musicService.music = music;
+                      musicService.play();
+                    }}
+                  >
+                    Play
+                  </Button>
+                  <Button variant="outlined" endIcon={<PlaylistAddOutlined />}>
+                    Track
+                  </Button>
                 </div>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  padding: "0 1rem",
-                  gap: "0.5rem",
-                }}
-              >
-                <Button variant="outlined" endIcon={<PlayArrowOutlined />}>
-                  Play
-                </Button>
-                <Button variant="outlined" endIcon={<PlaylistAddOutlined />}>
-                  Track
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

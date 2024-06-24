@@ -13,6 +13,10 @@ import {
   SpeedDial,
   AppBar,
   Toolbar,
+  Fade,
+  Card,
+  CardActionArea,
+  Drawer,
 } from "@mui/material";
 import {
   PlayArrowOutlined,
@@ -41,9 +45,106 @@ import LoginModal from "@/components/login";
 import { User } from "firebase/auth";
 import RegisterModal from "@/components/register";
 import UploadModal from "@/components/fileUpload";
-import { shortener } from "@/_utils/formatUtils";
+import { formatTime, shortener } from "@/_utils/formatUtils";
 import { Music } from "@/lib/data/music";
-import Fade from "@mui/material/Fade";
+
+function MusicBar() {
+  const [isPlaying, setIsPlaying] = useState<boolean>();
+  const [volume, setVolume] = useState<number>(1.0);
+  const [time, setTime] = useState<number>(0.0);
+  const [duration, setDuration] = useState<number>(100);
+  const [loop, setLoop] = useState<boolean>(false);
+
+  const play = () => {
+    setIsPlaying(true);
+    musicService.play();
+  };
+
+  const pause = () => {
+    setIsPlaying(false);
+    musicService.pause();
+  };
+
+  const toggle = () => {
+    setIsPlaying(!isPlaying);
+
+    if (!isPlaying) {
+      play();
+    } else {
+      pause();
+    }
+  };
+
+  const volumeChange = (_event: Event, newValue: number | number[]) => {
+    setVolume(newValue as number);
+    musicService.volume = newValue as number;
+  };
+
+  const mute = () => {
+    setVolume(0.0);
+    musicService.volume = 0.0;
+  };
+
+  const updateSlider = (_: Event, value: number | number[]) => {
+    if (isPlaying) {
+      pause();
+    }
+    musicService.currentTime = value as number;
+    setTime(value as number);
+  };
+
+  const theme = useTheme();
+  const matches = useMediaQuery(theme.breakpoints.up("sm"));
+
+  return (
+    <>
+      <Grid xs={10} sm={7}>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <IconButton color="primary" onClick={toggle}>
+            {isPlaying ? <PauseOutlined /> : <PlayArrowOutlined />}
+          </IconButton>
+
+          <Slider
+            value={time}
+            onChange={updateSlider}
+            max={duration}
+            valueLabelDisplay="auto"
+            valueLabelFormat={formatTime}
+            onChangeCommitted={() => {
+              play();
+            }}
+          />
+
+          <IconButton
+            onClick={() => {
+              setLoop(!loop);
+              musicService.loop = !musicService.loop;
+            }}
+          >
+            <LoopOutlined color={loop ? "primary" : "inherit"} />
+          </IconButton>
+
+          <Typography>{formatTime(time || 0)}</Typography>
+        </Stack>
+      </Grid>
+
+      <Grid xs={2} hidden={!matches}>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <IconButton color="primary" onClick={mute}>
+            {volume !== 0 ? <VolumeUpOutlined /> : <VolumeMuteOutlined />}
+          </IconButton>
+
+          <Slider
+            value={volume}
+            max={1.0}
+            onChange={volumeChange}
+            step={0.01}
+          />
+        </Stack>
+      </Grid>
+    </>
+  );
+}
 
 export default function BottomBar() {
   const [isPlaying, setIsPlaying] = useState<boolean>();
@@ -111,6 +212,7 @@ export default function BottomBar() {
       setIsPlaying(state);
       if (state) {
         setTime(musicService.currentTime);
+        setDuration(musicService.duration);
       }
     });
     const musicSub = musicService.onMusicChange((music) => {
@@ -133,24 +235,6 @@ export default function BottomBar() {
     }
     musicService.currentTime = value as number;
     setTime(value as number);
-  };
-
-  const formatTime = (duration: number) => {
-    const hours = Math.floor(duration / 3600);
-    const minutes = Math.floor((duration % 3600) / 60);
-    const seconds = Math.floor(duration % 60);
-
-    const hoursStr = String(hours).padStart(2, "0");
-    const minutesStr = String(minutes).padStart(2, "0");
-    const secondsStr = String(seconds).padStart(2, "0");
-
-    if (hours === 0) {
-      return `${minutesStr}:${secondsStr}`;
-    }
-    if (minutes === 0) {
-      return `${secondsStr}`;
-    }
-    return `${hoursStr}:${minutesStr}:${secondsStr}`;
   };
 
   const actions = useMemo(
@@ -217,8 +301,8 @@ export default function BottomBar() {
           open={uploadModalOpen}
           onClose={() => setUploadModalOpen(false)}
         />
-        <Toolbar>
-          <Container sx={{ m: 0, p: "0.5rem" }}>
+        <Toolbar style={{ margin: 0, padding: "0 1rem" }}>
+          <Container style={{ margin: 0, padding: 0 }}>
             <SpeedDial
               ariaLabel="SpeedDial basic example"
               sx={{ position: "absolute", bottom: 20, right: 20 }}
@@ -247,26 +331,30 @@ export default function BottomBar() {
             </SpeedDial>
 
             <Grid
-              style={{ margin: 0, padding: 0 }}
+              sx={{ m: 0, p: 0 }}
               container
               spacing={2}
               direction={matches ? "row" : "column"}
             >
               <Grid sx={{ m: 0, p: 0 }} xs="auto">
-                <Stack sx={{ m: 0, p: 0 }} direction="row" spacing={2}>
-                  <Image
-                    src={music.cover || "vercel.svg"}
-                    width={50}
-                    height={50}
-                    alt={music.name}
-                  />
-                  <Stack direction="column" spacing={0}>
-                    <Typography>{shortener(music.name, 10)}</Typography>
-                    <Typography variant="caption">
-                      {shortener(music.description, 8)}
-                    </Typography>
-                  </Stack>
-                </Stack>
+                <Card elevation={4} sx={{ boxShadow: "none" }}>
+                  <CardActionArea sx={{ p: 0.5 }}>
+                    <Stack sx={{ m: 0, p: 0 }} direction="row" spacing={2}>
+                      <Image
+                        src={music.cover || "vercel.svg"}
+                        width={50}
+                        height={50}
+                        alt={music.name}
+                      />
+                      <Stack direction="column" spacing={0}>
+                        <Typography>{shortener(music.name, 10)}</Typography>
+                        <Typography variant="caption">
+                          {shortener(music.description, 8)}
+                        </Typography>
+                      </Stack>
+                    </Stack>
+                  </CardActionArea>
+                </Card>
               </Grid>
 
               <Grid xs={10} sm={7}>

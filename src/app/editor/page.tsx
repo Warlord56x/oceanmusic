@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import vertexShader from "./shaders/vertex.glsl";
 import fragmentShader from "./shaders/fragment.glsl";
 import { Plane, Stats } from "@react-three/drei";
-import EditorTexture from "@/app/editor/editorTexture";
+import EditorTexture from "@/_utils/editorTexture";
 import { useFrame } from "@react-three/fiber";
 const View = dynamic(
   () => import("@/components/canvas/View").then((mod) => mod.View),
@@ -79,12 +79,11 @@ function ThreeDView({ texture, width, height }: ViewProps) {
 
 export default function Editor() {
   const [width, height] = useMemo(() => [512, 512], []);
-  const editor = useMemo(
-    () => new EditorTexture(width, height, { fontColor: "White" }),
-    [height, width],
+  const editor = useRef(
+    new EditorTexture(width, height, { fontColor: "White" }),
   );
   const textInput = useRef<HTMLDivElement>(null!);
-  const texture = useMemo(() => editor.texture, []);
+  const texture = useMemo(() => editor.current.texture, []);
 
   const handleDivClick = () => {
     textInput.current.focus();
@@ -94,8 +93,8 @@ export default function Editor() {
 
   useEffect(() => {
     intervalRef.current = setInterval(() => {
-      if (editor) {
-        editor.updateCaret();
+      if (editor.current) {
+        editor.current.updateCaret();
       }
     }, 500);
 
@@ -113,7 +112,7 @@ export default function Editor() {
       tabIndex={0}
       autoFocus
       onKeyDown={(event) => {
-        editor.printKey(event.key);
+        editor.current.printKey(event.key);
       }}
       onClick={handleDivClick}
     >
