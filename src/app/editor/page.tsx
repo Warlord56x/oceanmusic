@@ -1,7 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CircularProgress } from "@mui/material";
 import dynamic from "next/dynamic";
 import vertexShader from "./shaders/vertex.glsl";
@@ -86,6 +86,7 @@ export default function Editor() {
     })(),
   );
   const textInput = useRef<HTMLDivElement>(null!);
+  const [isMobile, setIsMobile] = useState(false);
 
   const handleDivClick = () => {
     textInput.current.focus();
@@ -107,17 +108,40 @@ export default function Editor() {
     };
   }, []);
 
+  useEffect(() => {
+    const userAgent = navigator.userAgent;
+    setIsMobile(/iPhone|iPad|iPod|Android|Windows Phone/.test(userAgent));
+  }, []);
+
   return (
-    <div
-      style={{ height: "100%", outline: "none" }}
-      ref={textInput}
-      tabIndex={0}
-      autoFocus
-      onKeyDown={(event) => {
-        if (editor.current) editor.current.printKey(event.key);
-      }}
-      onClick={handleDivClick}
-    >
+    <div style={{ height: "100%" }}>
+      <div
+        style={{
+          height: "100%",
+          width: "100%",
+          outline: "none",
+          position: "absolute",
+          top: 0,
+          right: 0,
+          opacity: 0,
+        }}
+        ref={textInput}
+        tabIndex={0}
+        autoFocus
+        contentEditable="plaintext-only"
+        onKeyDown={(event) => {
+          if (editor.current && event.key !== "Unidentified") {
+            editor.current.printKey(event.key);
+          }
+        }}
+        onInput={(event) => {
+          if (!isMobile) return;
+          const ev = event.nativeEvent as InputEvent;
+          if (ev.data == null) return;
+          editor.current?.printKey(ev.data[ev.data.length - 1]);
+        }}
+        onClick={handleDivClick}
+      ></div>
       <div style={{ height: "100%" }}>
         <View orbit style={{ height: "100%" }}>
           <ThreeDView
