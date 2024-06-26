@@ -104,12 +104,6 @@ function ImageParticles() {
       angles[i] = Math.random() * Math.PI; // Generate random angle
     }
 
-    console.log(`Total points processed: ${numParticles}`);
-    console.log(`Positions length: ${positions.length}`);
-    console.log(`Colors length: ${colors.length}`);
-    console.log(`UVs length: ${uvs.length}`);
-    console.log(`Angles length: ${angles.length}`);
-
     return {
       positions,
       colors,
@@ -186,7 +180,7 @@ function ImageParticles() {
 export default function Home() {
   return (
     <div style={{ height: "100%" }}>
-      <View far style={{ height: "100%" }}>
+      <View far style={{ height: "100%", touchAction: "none" }}>
         <ImageParticles />
       </View>
     </div>

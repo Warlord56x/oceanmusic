@@ -20,7 +20,6 @@ const Layout = ({ children }: Props) => {
         width: " 100%",
         height: "100%",
         overflow: "auto",
-        touchAction: "none",
       }}
     >
       {children}

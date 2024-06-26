@@ -235,7 +235,7 @@ export default function Page({ params }: { params: { id: string } }) {
           position: "fixed",
         }}
       >
-        <View far style={{ height: "100%" }}>
+        <View far style={{ height: "100%", touchAction: "none" }}>
           <Cover url={music?.cover || "/next.svg"} rotate={isPlaying} />
         </View>
       </div>

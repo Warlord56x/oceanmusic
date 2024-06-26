@@ -4,11 +4,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   IconButton,
   Slider,
-  Container,
   Typography,
-  useMediaQuery,
   Stack,
-  useTheme,
   SpeedDialAction,
   SpeedDial,
   AppBar,
@@ -16,7 +13,6 @@ import {
   Fade,
   Card,
   CardActionArea,
-  Drawer,
 } from "@mui/material";
 import {
   PlayArrowOutlined,
@@ -37,7 +33,6 @@ import {
 } from "@mui/icons-material";
 
 import musicService from "@/_services/musicService";
-import Grid from "@mui/system/Unstable_Grid";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { onAuthStateChanged, signOut } from "@/lib/firebase/auth";
@@ -93,18 +88,54 @@ function MusicBar() {
     setTime(value as number);
   };
 
-  const theme = useTheme();
-  const matches = useMediaQuery(theme.breakpoints.up("sm"));
+  useEffect(() => {
+    const timeUpdate = () => {
+      setTime(musicService.currentTime);
+    };
+
+    musicService.timeUpdate(timeUpdate);
+    const sub = musicService.onPlayStateChange((state) => {
+      setIsPlaying(state);
+      if (state) {
+        setTime(musicService.currentTime);
+        setDuration(musicService.duration);
+      }
+    });
+
+    return () => {
+      sub.unsubscribe();
+      musicService.removerTimeUpdate(timeUpdate);
+    };
+  }, [duration, time]);
 
   return (
-    <>
-      <Grid xs={10} sm={7}>
-        <Stack direction="row" spacing={1} alignItems="center">
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        width: "100%",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          width: "100%",
+        }}
+      >
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{ width: "100%" }}
+        >
           <IconButton color="primary" onClick={toggle}>
             {isPlaying ? <PauseOutlined /> : <PlayArrowOutlined />}
           </IconButton>
 
           <Slider
+            sx={{ width: "100%" }}
             value={time}
             onChange={updateSlider}
             max={duration}
@@ -126,10 +157,15 @@ function MusicBar() {
 
           <Typography>{formatTime(time || 0)}</Typography>
         </Stack>
-      </Grid>
+      </div>
 
-      <Grid xs={2} hidden={!matches}>
-        <Stack direction="row" spacing={1} alignItems="center">
+      <div style={{ display: "flex", width: "100%" }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{ width: "25%" }}
+        >
           <IconButton color="primary" onClick={mute}>
             {volume !== 0 ? <VolumeUpOutlined /> : <VolumeMuteOutlined />}
           </IconButton>
@@ -141,17 +177,12 @@ function MusicBar() {
             step={0.01}
           />
         </Stack>
-      </Grid>
-    </>
+      </div>
+    </div>
   );
 }
 
 export default function BottomBar() {
-  const [isPlaying, setIsPlaying] = useState<boolean>();
-  const [volume, setVolume] = useState<number>(1.0);
-  const [time, setTime] = useState<number>(0.0);
-  const [duration, setDuration] = useState<number>(100);
-  const [loop, setLoop] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
@@ -168,74 +199,6 @@ export default function BottomBar() {
     description: "Hosszu desc meg minden",
     cover: "/vercel.svg",
   });
-
-  const theme = useTheme();
-  const matches = useMediaQuery(theme.breakpoints.up("sm"));
-
-  const play = () => {
-    setIsPlaying(true);
-    musicService.play();
-  };
-
-  const pause = () => {
-    setIsPlaying(false);
-    musicService.pause();
-  };
-
-  const toggle = () => {
-    setIsPlaying(!isPlaying);
-
-    if (!isPlaying) {
-      play();
-    } else {
-      pause();
-    }
-  };
-
-  const volumeChange = (_event: Event, newValue: number | number[]) => {
-    setVolume(newValue as number);
-    musicService.volume = newValue as number;
-  };
-
-  const mute = () => {
-    setVolume(0.0);
-    musicService.volume = 0.0;
-  };
-
-  useEffect(() => {
-    const timeUpdate = () => {
-      setTime(musicService.currentTime);
-    };
-
-    musicService.timeUpdate(timeUpdate);
-    const sub = musicService.onPlayStateChange((state) => {
-      setIsPlaying(state);
-      if (state) {
-        setTime(musicService.currentTime);
-        setDuration(musicService.duration);
-      }
-    });
-    const musicSub = musicService.onMusicChange((music) => {
-      setMusic(music);
-      setDuration(100.0);
-      setTime(0.0);
-    });
-
-    return () => {
-      sub.unsubscribe();
-      musicSub.unsubscribe();
-      musicService.removerTimeUpdate(timeUpdate);
-    };
-  }, [duration, time]);
-
-  // Update the audio playback position when the slider changes
-  const updateSlider = (_: Event, value: number | number[]) => {
-    if (isPlaying) {
-      pause();
-    }
-    musicService.currentTime = value as number;
-    setTime(value as number);
-  };
 
   const actions = useMemo(
     () => [
@@ -279,7 +242,15 @@ export default function BottomBar() {
     const unsubscribe = onAuthStateChanged((user) => {
       setUser(user);
     });
-    return () => unsubscribe();
+
+    const musicSub = musicService.onMusicChange((music) => {
+      setMusic(music);
+    });
+
+    return () => {
+      musicSub.unsubscribe();
+      unsubscribe();
+    };
   }, []);
 
   return (
@@ -287,7 +258,12 @@ export default function BottomBar() {
       <AppBar
         color="primary"
         position="fixed"
-        sx={{ m: 0, p: 0, bottom: 0, top: "auto" }}
+        sx={{
+          m: 0,
+          p: 0,
+          bottom: 0,
+          top: "auto",
+        }}
       >
         <LoginModal
           open={loginModalOpen}
@@ -301,11 +277,11 @@ export default function BottomBar() {
           open={uploadModalOpen}
           onClose={() => setUploadModalOpen(false)}
         />
-        <Toolbar style={{ margin: 0, padding: "0 1rem" }}>
-          <Container style={{ margin: 0, padding: 0 }}>
+        <Toolbar style={{ margin: 0, padding: "0 1rem", height: "5rem" }}>
+          <div style={{ margin: 0, padding: 0, width: "100%" }}>
             <SpeedDial
               ariaLabel="SpeedDial basic example"
-              sx={{ position: "absolute", bottom: 20, right: 20 }}
+              sx={{ position: "absolute", bottom: 40, right: 20 }}
               onOpen={() => setDialOpen(true)}
               onClose={() => setDialOpen(false)}
               icon={
@@ -330,13 +306,14 @@ export default function BottomBar() {
               ))}
             </SpeedDial>
 
-            <Grid
-              sx={{ m: 0, p: 0 }}
-              container
-              spacing={2}
-              direction={matches ? "row" : "column"}
-            >
-              <Grid sx={{ m: 0, p: 0 }} xs="auto">
+            <div style={{ display: "flex" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  width: "15rem",
+                }}
+              >
                 <Card elevation={4} sx={{ boxShadow: "none" }}>
                   <CardActionArea sx={{ p: 0.5 }}>
                     <Stack sx={{ m: 0, p: 0 }} direction="row" spacing={2}>
@@ -349,68 +326,20 @@ export default function BottomBar() {
                       <Stack direction="column" spacing={0}>
                         <Typography>{shortener(music.name, 10)}</Typography>
                         <Typography variant="caption">
-                          {shortener(music.description, 8)}
+                          {shortener(music.author, 8)}
                         </Typography>
                       </Stack>
                     </Stack>
                   </CardActionArea>
                 </Card>
-              </Grid>
+              </div>
 
-              <Grid xs={10} sm={7}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <IconButton color="primary" onClick={toggle}>
-                    {isPlaying ? <PauseOutlined /> : <PlayArrowOutlined />}
-                  </IconButton>
-
-                  <Slider
-                    value={time}
-                    onChange={updateSlider}
-                    max={duration}
-                    valueLabelDisplay="auto"
-                    valueLabelFormat={formatTime}
-                    onChangeCommitted={() => {
-                      play();
-                    }}
-                  />
-
-                  <IconButton
-                    onClick={() => {
-                      setLoop(!loop);
-                      musicService.loop = !musicService.loop;
-                    }}
-                  >
-                    <LoopOutlined color={loop ? "primary" : "inherit"} />
-                  </IconButton>
-
-                  <Typography>{formatTime(time || 0)}</Typography>
-                </Stack>
-              </Grid>
-
-              <Grid xs={2} hidden={!matches}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <IconButton color="primary" onClick={mute}>
-                    {volume !== 0 ? (
-                      <VolumeUpOutlined />
-                    ) : (
-                      <VolumeMuteOutlined />
-                    )}
-                  </IconButton>
-
-                  <Slider
-                    value={volume}
-                    max={1.0}
-                    onChange={volumeChange}
-                    step={0.01}
-                  />
-                </Stack>
-              </Grid>
-            </Grid>
-          </Container>
+              <MusicBar />
+            </div>
+          </div>
         </Toolbar>
       </AppBar>
-      {!matches ? <Toolbar /> : ""}
-      <Toolbar />
+      <div style={{ height: "5rem" }}></div>
     </>
   );
 }
