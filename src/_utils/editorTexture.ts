@@ -1,11 +1,13 @@
+"use client";
+
 import * as THREE from "three";
 
 export default class EditorTexture {
   private readonly width: number = 512;
   private readonly height: number = 512;
 
-  private canvas = THREE.createCanvasElement();
-  private ctx = this.canvas.getContext("2d")!;
+  private readonly canvas;
+  private ctx;
   private readonly fontSize: number;
   private text: string = "";
   private line: number = 1;
@@ -27,6 +29,9 @@ export default class EditorTexture {
       fontColor?: string;
     } = { fontSize: 50, fontColor: "White" },
   ) {
+    this.canvas = THREE.createCanvasElement();
+    this.ctx = this.canvas.getContext("2d")!;
+
     this.width = width;
     this.height = height;
     this.fontSize = options.fontSize || 50;
@@ -72,44 +77,6 @@ export default class EditorTexture {
     this._texture.needsUpdate = true;
   }
 
-  private addHiddenStyle() {
-    const style = document.createElement("style");
-    style.innerHTML = `
-        .hidden-span {
-          visibility: hidden;
-          white-space: nowrap;
-          position: absolute;
-          top: -9999px;
-          box-sizing: border-box;
-        }
-      `;
-    document.head.appendChild(style);
-    return style;
-  }
-
-  private getTextWidth(char: string, font: string) {
-    const style = this.addHiddenStyle();
-
-    // Create a hidden span element
-    const span = document.createElement("span");
-    span.className = "hidden-span";
-    span.textContent = char;
-    span.style.font = font;
-
-    // Append span to the body
-    document.body.appendChild(span);
-
-    // Get the width of the character
-    const width = span.getBoundingClientRect().width;
-
-    // Remove the span from the body
-    document.body.removeChild(span);
-
-    document.head.removeChild(style);
-
-    return width;
-  }
-
   private cleanText() {
     let printText;
 
@@ -128,7 +95,8 @@ export default class EditorTexture {
   updateCaret() {
     const printText = this.cleanText();
 
-    const textWidth = this.getTextWidth(printText, `${this.fontSize}px mono`);
+    const textWidth = this.ctx.measureText(printText).width;
+    if (!textWidth) return;
 
     const caret = {
       x: textWidth + this.fontSize,
@@ -151,10 +119,7 @@ export default class EditorTexture {
     if (this.escapes.includes(key)) return;
     if (key === "Backspace") {
       if (this.text[this.text.length - 1] === "\n") {
-        this.lastLineWidth = this.getTextWidth(
-          this.cleanText(),
-          `${this.fontSize}px mono`,
-        );
+        this.lastLineWidth = this.ctx.measureText(this.cleanText()).width;
         this.line--;
       }
       this.text = this.text.slice(0, this.text.length - 1);
@@ -167,10 +132,7 @@ export default class EditorTexture {
       return;
     }
     if (key === "Enter") {
-      this.lastLineWidth = this.getTextWidth(
-        this.cleanText(),
-        `${this.fontSize}px mono`,
-      );
+      this.lastLineWidth = this.ctx.measureText(this.cleanText()).width;
       this.line++;
       this.text += "\n";
       this.print();

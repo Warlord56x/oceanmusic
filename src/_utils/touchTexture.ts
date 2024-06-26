@@ -22,7 +22,7 @@ export default class TouchTexture {
     this.radius = 0.15;
     this.trail = [];
 
-    this.canvas = document.createElement("canvas");
+    this.canvas = THREE.createCanvasElement();
     this.canvas.width = this.canvas.height = this.size;
     this.ctx = this.canvas.getContext("2d")!;
     this.ctx.fillStyle = "black";

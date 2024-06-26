@@ -36,7 +36,7 @@ const View = dynamic(
 type ViewProps = {
   width: number;
   height: number;
-  texture: THREE.Texture;
+  texture: THREE.Texture | undefined;
 };
 
 function ThreeDView({ texture, width, height }: ViewProps) {
@@ -53,7 +53,7 @@ function ThreeDView({ texture, width, height }: ViewProps) {
       },
       uTime: { value: 0 },
     }),
-    [],
+    [texture],
   );
 
   useFrame((state) => {
@@ -79,11 +79,13 @@ function ThreeDView({ texture, width, height }: ViewProps) {
 
 export default function Editor() {
   const [width, height] = useMemo(() => [512, 512], []);
-  const editor = useRef(
-    new EditorTexture(width, height, { fontColor: "White" }),
+  const editor = useRef<EditorTexture | undefined>(
+    (function () {
+      if (typeof window === "undefined") return;
+      return new EditorTexture(width, height, { fontColor: "White" });
+    })(),
   );
   const textInput = useRef<HTMLDivElement>(null!);
-  const texture = useMemo(() => editor.current.texture, []);
 
   const handleDivClick = () => {
     textInput.current.focus();
@@ -103,7 +105,7 @@ export default function Editor() {
         clearInterval(intervalRef.current);
       }
     };
-  }, [editor]);
+  }, []);
 
   return (
     <div
@@ -112,13 +114,17 @@ export default function Editor() {
       tabIndex={0}
       autoFocus
       onKeyDown={(event) => {
-        editor.current.printKey(event.key);
+        if (editor.current) editor.current.printKey(event.key);
       }}
       onClick={handleDivClick}
     >
       <div style={{ height: "100%" }}>
         <View orbit style={{ height: "100%" }}>
-          <ThreeDView width={width} height={height} texture={texture} />
+          <ThreeDView
+            width={width}
+            height={height}
+            texture={editor.current?.texture}
+          />
           <Stats />
         </View>
       </div>
