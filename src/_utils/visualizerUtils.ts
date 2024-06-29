@@ -77,7 +77,7 @@ export function getFrequencies(
   return [bassFr * config.amp, midFr * config.amp, treFr * config.amp];
 }
 
-function getFrequencyData(analyser: AnalyserNode) {
+export function getFrequencyData(analyser: AnalyserNode) {
   const dataArray = new Uint8Array(analyser.frequencyBinCount);
   analyser.getByteFrequencyData(dataArray);
   return dataArray;

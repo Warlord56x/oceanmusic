@@ -4,6 +4,7 @@ import { Subject } from "rxjs";
 class MusicService {
   public isPlaying = false;
 
+  public analyser!: AnalyserNode;
   public bassAnalyser!: AnalyserNode;
   public midAnalyser!: AnalyserNode;
   public trebleAnalyser!: AnalyserNode;
@@ -101,6 +102,7 @@ class MusicService {
       this.audio.crossOrigin = "anonymous";
       this.audioContext = new AudioContext();
 
+      this.analyser = this.audioContext.createAnalyser();
       this.bassAnalyser = this.audioContext.createAnalyser();
       this.midAnalyser = this.audioContext.createAnalyser();
       this.trebleAnalyser = this.audioContext.createAnalyser();
@@ -111,6 +113,8 @@ class MusicService {
 
       this.source = this.audioContext.createMediaElementSource(this.audio);
       this.source.connect(this.audioContext.destination);
+
+      this.source.connect(this.analyser);
 
       this.source.connect(this.lowPassFilter);
       this.lowPassFilter.connect(this.bassAnalyser);

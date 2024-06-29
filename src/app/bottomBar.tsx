@@ -30,6 +30,7 @@ import {
   CloseOutlined,
   MoreHorizOutlined,
   EditOutlined,
+  GraphicEqOutlined,
 } from "@mui/icons-material";
 
 import musicService from "@/_services/musicService";
@@ -211,6 +212,11 @@ export default function BottomBar() {
         icon: <ThreeDRotationOutlined />,
         name: "Particles",
         action: () => router.push("/particles"),
+      },
+      {
+        icon: <GraphicEqOutlined />,
+        name: "Frequency",
+        action: () => router.push("/frequency"),
       },
       {
         icon: <LibraryMusicOutlined />,
