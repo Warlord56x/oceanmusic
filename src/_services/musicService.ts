@@ -91,7 +91,6 @@ class MusicService {
 
   pause() {
     this.audio.pause();
-    this.audioContext.suspend();
     this.isPlaying = false;
     this.musicPlayingSubject.next(false);
   }
