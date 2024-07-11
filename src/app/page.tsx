@@ -186,3 +186,5 @@ export default function Home() {
     </div>
   );
 }
+
+useTexture.preload("hokusai_reszlet_2.png");

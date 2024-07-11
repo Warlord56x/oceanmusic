@@ -324,6 +324,7 @@ export default function BottomBar() {
                   <CardActionArea sx={{ p: 0.5 }}>
                     <Stack sx={{ m: 0, p: 0 }} direction="row" spacing={2}>
                       <Image
+                        priority
                         src={music.cover || "vercel.svg"}
                         width={50}
                         height={50}
